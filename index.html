@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Agenda & Absensi Kelas - SteinHQ</title>
+    <title>Aplikasi Agenda & Absensi Kelas - Enterprise</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Pro/Free -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- SheetJS (XLSX) untuk Export Excel & Import -->
+    <!-- SheetJS (XLSX) untuk Export & Import Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- HTML5-Qrcode untuk Scan Kamera -->
+    <!-- HTML5-Qrcode untuk Kamera Scanner -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script>
         const STEIN_URL = "https://api.steinhq.com/v1/storages/6a70b66092b1163e9728b63a";
@@ -22,13 +22,13 @@
     <div id="loginPage" class="min-h-screen flex items-center justify-center bg-gradient-to-tr from-blue-900 via-indigo-900 to-slate-900 p-4">
         <div class="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-md w-full p-8 border border-white/20">
             <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-full text-2xl mb-4 shadow-inner">
+                <div id="loginLogoContainer" class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-full text-2xl mb-4 shadow-inner overflow-hidden">
                     <i class="fa-solid fa-graduation-cap"></i>
                 </div>
-                <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Sistem Agenda & Absensi</h1>
-                <p class="text-sm text-slate-500 mt-1">Silakan masuk sesuai hak akses Anda</p>
+                <h1 id="loginSchoolTitle" class="text-2xl font-bold text-slate-900 tracking-tight">Sistem Agenda & Absensi</h1>
+                <p class="text-sm text-slate-500 mt-1">Silakan masuk menggunakan akun Anda</p>
             </div>
-            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-5">
+            <form onsubmit="handleLogin(event)" class="space-y-5">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Username / Email</label>
                     <div class="relative">
@@ -45,27 +45,30 @@
                 </div>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-blue-500/30 transition transform active:scale-95">Masuk Aplikasi</button>
             </form>
-            <div class="mt-6 text-center text-xs text-slate-400">
-                Terhubung ke Database Stein HQ &bull; v2.5 Enterprise
-            </div>
+            <div class="mt-6 text-center text-xs text-slate-400">Terhubung ke Database Stein HQ</div>
         </div>
     </div>
 
     <!-- HALAMAN UTAMA APLIKASI -->
     <div id="appPage" class="hidden min-h-screen flex flex-col">
-        <!-- Top Navigation -->
+        <!-- Top Navbar -->
         <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
             <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
                 <div class="flex items-center space-x-3">
                     <button onclick="toggleSidebar()" class="text-slate-600 hover:text-blue-600 md:hidden p-2"><i class="fa-solid fa-bars text-xl"></i></button>
-                    <div class="flex items-center space-x-2">
-                        <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold"><i class="fa-solid fa-school-flag"></i></div>
-                        <span id="schoolNameHeader" class="font-bold text-lg text-slate-800">SMA Negeri / Swasta</span>
+                    <div class="flex items-center space-x-3">
+                        <div id="headerLogoBox" class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold shadow-sm overflow-hidden">
+                            <i class="fa-solid fa-school-flag"></i>
+                        </div>
+                        <div>
+                            <span id="schoolNameHeader" class="font-bold text-base text-slate-800 block leading-tight">Nama Sekolah</span>
+                            <span id="schoolNpsnHeader" class="text-xs text-slate-400 font-medium">NPSN: -</span>
+                        </div>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
                     <div class="text-right hidden sm:block">
-                        <div id="userNameDisplay" class="text-sm font-bold text-slate-700">Nama Pengguna</div>
+                        <div id="userNameDisplay" class="text-sm font-bold text-slate-700">User</div>
                         <div id="userRoleBadge" class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full inline-block">Role</div>
                     </div>
                     <button onclick="logout()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 px-3.5 py-2 rounded-xl text-sm font-semibold transition flex items-center"><i class="fa-solid fa-power-off mr-1.5"></i>Logout</button>
@@ -74,39 +77,32 @@
         </header>
 
         <div class="flex-1 flex overflow-hidden">
-            <!-- Sidebar -->
-            <aside id="sidebar" class="bg-white w-70 border-r border-slate-200 hidden md:block overflow-y-auto transition-all p-4 space-y-1 z-20">
-                <div id="sidebarMenu" class="space-y-1">
-                    <!-- Dinamis via JS -->
-                </div>
+            <!-- Sidebar (Menu Lengkap & Dinamis) -->
+            <aside id="sidebar" class="bg-white w-72 border-r border-slate-200 hidden md:block overflow-y-auto transition-all p-4 space-y-1 z-20">
+                <div id="sidebarMenu" class="space-y-1"></div>
             </aside>
 
-            <!-- Main Content Container -->
-            <main class="flex-1 p-6 overflow-y-auto bg-slate-100" id="mainContent">
-                <!-- Konten Halaman Aktif -->
-            </main>
+            <!-- Main Content Area -->
+            <main class="flex-1 p-6 overflow-y-auto bg-slate-100" id="mainContent"></main>
         </div>
     </div>
 
-    <!-- MODAL POPUP GLOBAL / SCANNER -->
+    <!-- GLOBAL MODAL -->
     <div id="modalContainer" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-100 animate-in fade-in zoom-in duration-200">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-100">
             <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
                 <h3 id="modalTitle" class="text-lg font-bold text-slate-800">Modal Title</h3>
                 <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
-            <div id="modalBody">
-                <!-- Konten Modal Dinamis -->
-            </div>
+            <div id="modalBody"></div>
         </div>
     </div>
 
-    <!-- JAVASCRIPT UTAMA -->
+    <!-- SCRIPT UTAMA -->
     <script>
         let currentUser = null;
         let html5QrCode = null;
 
-        // Helper Fetch Stein API
         async function fetchStein(table, method = 'get', data = null, condition = null) {
             let url = `${STEIN_URL}/${table}`;
             try {
@@ -114,42 +110,28 @@
                     let res = await fetch(url);
                     return await res.json();
                 } else if (method === 'post') {
-                    let res = await fetch(url, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(data)
-                    });
+                    let res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
                     return await res.json();
                 } else if (method === 'put') {
-                    let res = await fetch(url, {
-                        method: 'PUT',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({condition: condition, set: data})
-                    });
+                    let res = await fetch(url, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({condition: condition, set: data}) });
                     return await res.json();
                 } else if (method === 'delete') {
-                    let res = await fetch(url, {
-                        method: 'DELETE',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(condition)
-                    });
+                    let res = await fetch(url, { method: 'DELETE', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(condition) });
                     return await res.json();
                 }
             } catch (err) {
                 console.error("Stein API Error:", err);
-                alert("Koneksi ke server Stein HQ bermasalah.");
                 return [];
             }
         }
 
-        // Handle Login
         async function handleLogin(e) {
             e.preventDefault();
             const u = document.getElementById('loginUser').value.trim();
             const p = document.getElementById('loginPass').value.trim();
 
-            const users = await fetchStein('users');
-            const found = users.find(x => x.username === u && x.password === p);
+            let users = await fetchStein('users');
+            let found = users.find(x => x.username === u && x.password === p);
 
             if (found) {
                 currentUser = found;
@@ -165,11 +147,26 @@
             location.reload();
         }
 
-        window.onload = () => {
+        window.onload = async () => {
+            await loadGlobalProfil();
             const saved = localStorage.getItem('user');
             if (saved) {
                 currentUser = JSON.parse(saved);
                 initApp();
+            }
+        }
+
+        async function loadGlobalProfil() {
+            let profil = await fetchStein('profil');
+            if(profil && profil.length > 0) {
+                let p = profil[0];
+                document.getElementById('schoolNameHeader').innerText = p.nama_sekolah || "SMA Negeri / Swasta";
+                document.getElementById('schoolNpsnHeader').innerText = "NPSN: " + (p.npsn || "-");
+                document.getElementById('loginSchoolTitle').innerText = p.nama_sekolah || "Sistem Agenda & Absensi";
+                if(p.logo) {
+                    document.getElementById('headerLogoBox').innerHTML = `<img src="${p.logo}" class="w-full h-full object-cover">`;
+                    document.getElementById('loginLogoContainer').innerHTML = `<img src="${p.logo}" class="w-full h-full object-cover">`;
+                }
             }
         }
 
@@ -179,16 +176,9 @@
             document.getElementById('userRoleBadge').innerText = currentUser.role.toUpperCase();
             document.getElementById('userNameDisplay').innerText = currentUser.nama || currentUser.username;
             
-            loadProfilHeader();
             renderSidebar();
-            loadDashboard();
-        }
-
-        async function loadProfilHeader() {
-            let profil = await fetchStein('profil');
-            if(profil && profil.length > 0) {
-                document.getElementById('schoolNameHeader').innerText = profil[0].nama_sekolah || "Agenda & Absensi";
-            }
+            if(currentUser.role === 'admin') loadAdminDashboard();
+            else loadGuruDashboard();
         }
 
         function toggleSidebar() {
@@ -198,7 +188,7 @@
         function renderSidebar() {
             const menu = document.getElementById('sidebarMenu');
             let html = '';
-            const createBtn = (icon, label, func) => `
+            const btn = (icon, label, func) => `
                 <button onclick="${func}; if(window.innerWidth < 768) toggleSidebar();" class="w-full text-left px-4 py-3 rounded-xl hover:bg-blue-50 text-slate-600 hover:text-blue-600 font-medium transition flex items-center space-x-3 group">
                     <span class="w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-blue-100 text-slate-500 group-hover:text-blue-600 flex items-center justify-center transition"><i class="${icon}"></i></span>
                     <span class="text-sm">${label}</span>
@@ -206,64 +196,49 @@
             `;
 
             if (currentUser.role === 'admin') {
-                html += createBtn('fa-solid fa-chart-pie', 'Dashboard Admin', 'loadAdminDashboard');
-                html += createBtn('fa-solid fa-user-graduate', 'Data Siswa', 'loadDataSiswa');
-                html += createBtn('fa-solid fa-school', 'Data Kelas / Rombel', 'loadDataKelas');
-                html += createBtn('fa-solid fa-chalkboard-user', 'Data Guru', 'loadDataGuru');
-                html += createBtn('fa-solid fa-user-tie', 'Wali Kelas', 'loadWaliKelas');
-                html += createBtn('fa-solid fa-calendar-days', 'Periode Tahun Ajaran', 'loadPeriode');
-                html += createBtn('fa-solid fa-users-gear', 'Manajemen User', 'loadManajemenUser');
-                html += createBtn('fa-solid fa-building-columns', 'Profil Sekolah', 'loadProfilSekolah');
+                html += btn('fa-solid fa-chart-pie', 'Dashboard Admin', 'loadAdminDashboard');
+                html += btn('fa-solid fa-user-graduate', 'Data Siswa', 'loadDataSiswa');
+                html += btn('fa-solid fa-school', 'Data Kelas / Rombel', 'loadDataKelas');
+                html += btn('fa-solid fa-chalkboard-user', 'Data Guru', 'loadDataGuru');
+                html += btn('fa-solid fa-user-tie', 'Wali Kelas', 'loadWaliKelas');
+                html += btn('fa-solid fa-calendar-days', 'Periode Tahun Ajaran', 'loadPeriode');
+                html += btn('fa-solid fa-users-gear', 'Manajemen User', 'loadManajemenUser');
+                html += btn('fa-solid fa-building-columns', 'Menu Sekolah & Profil', 'loadMenuSekolah');
             } else {
-                html += createBtn('fa-solid fa-chart-line', 'Dashboard Guru', 'loadGuruDashboard');
-                html += createBtn('fa-solid fa-book', 'Data Mapel', 'loadGuruMapel');
-                html += createBtn('fa-solid fa-user-group', 'Data Siswa Per Rombel', 'loadGuruSiswa');
-                html += createBtn('fa-solid fa-qrcode', 'Absensi & QR Scan', 'loadGuruAbsen');
-                html += createBtn('fa-solid fa-user-clock', 'Belum Absen', 'loadGuruBelumAbsen');
-                html += createBtn('fa-solid fa-file-excel', 'Rekap Absensi', 'loadGuruRekap');
+                html += btn('fa-solid fa-chart-line', 'Dashboard Guru', 'loadGuruDashboard');
+                html += btn('fa-solid fa-book', 'Data Mapel', 'loadGuruMapel');
+                html += btn('fa-solid fa-user-group', 'Data Siswa Per Rombel', 'loadGuruSiswa');
+                html += btn('fa-solid fa-qrcode', 'Absensi & QR Scan', 'loadGuruAbsen');
+                html += btn('fa-solid fa-user-clock', 'Belum Absen', 'loadGuruBelumAbsen');
+                html += btn('fa-solid fa-file-excel', 'Rekap Absensi', 'loadGuruRekap');
             }
             menu.innerHTML = html;
         }
 
-        function loadDashboard() {
-            if (currentUser.role === 'admin') loadAdminDashboard();
-            else loadGuruDashboard();
-        }
-
-        // ================= ADMIN MODULES =================
-        function loadAdminDashboard() {
+        // ================= ADMIN DASHBOARD & MENU =================
+        async function loadAdminDashboard() {
+            let s = await fetchStein('siswa');
+            let g = await fetchStein('guru');
+            let k = await fetchStein('kelas');
             document.getElementById('mainContent').innerHTML = `
                 <div class="space-y-6">
-                    <div>
-                        <h1 class="text-2xl font-bold text-slate-800">Dashboard Administrator</h1>
-                        <p class="text-sm text-slate-500">Kelola data master akademik dan pengguna sistem sekolah.</p>
-                    </div>
+                    <div><h1 class="text-2xl font-bold text-slate-800">Dashboard Administrator</h1><p class="text-sm text-slate-500">Kelola keseluruhan data akademik dan sistem sekolah.</p></div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 flex items-center space-x-4">
                             <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl"><i class="fa-solid fa-users"></i></div>
-                            <div><div class="text-slate-500 text-sm font-medium">Total Siswa</div><div id="statSiswa" class="text-2xl font-bold text-slate-800">0</div></div>
+                            <div><div class="text-slate-500 text-sm font-medium">Total Siswa</div><div class="text-2xl font-bold text-slate-800">${s.length || 0}</div></div>
                         </div>
                         <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 flex items-center space-x-4">
                             <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl"><i class="fa-solid fa-chalkboard-user"></i></div>
-                            <div><div class="text-slate-500 text-sm font-medium">Total Guru</div><div id="statGuru" class="text-2xl font-bold text-slate-800">0</div></div>
+                            <div><div class="text-slate-500 text-sm font-medium">Total Guru</div><div class="text-2xl font-bold text-slate-800">${g.length || 0}</div></div>
                         </div>
                         <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 flex items-center space-x-4">
                             <div class="w-14 h-14 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center text-2xl"><i class="fa-solid fa-school"></i></div>
-                            <div><div class="text-slate-500 text-sm font-medium">Total Kelas</div><div id="statKelas" class="text-2xl font-bold text-slate-800">0</div></div>
+                            <div><div class="text-slate-500 text-sm font-medium">Total Kelas</div><div class="text-2xl font-bold text-slate-800">${k.length || 0}</div></div>
                         </div>
                     </div>
                 </div>
             `;
-            updateAdminStats();
-        }
-
-        async function updateAdminStats() {
-            let s = await fetchStein('siswa');
-            let g = await fetchStein('guru');
-            let k = await fetchStein('kelas');
-            if(document.getElementById('statSiswa')) document.getElementById('statSiswa').innerText = s.length || 0;
-            if(document.getElementById('statGuru')) document.getElementById('statGuru').innerText = g.length || 0;
-            if(document.getElementById('statKelas')) document.getElementById('statKelas').innerText = k.length || 0;
         }
 
         // --- 1. DATA SISWA ---
@@ -272,7 +247,7 @@
             let html = `
                 <div class="space-y-6">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div><h1 class="text-2xl font-bold text-slate-800">Manajemen Data Siswa</h1><p class="text-sm text-slate-500">Tambah manual, upload foto, atau import dari Excel.</p></div>
+                        <div><h1 class="text-2xl font-bold text-slate-800">Data Siswa</h1><p class="text-sm text-slate-500">Input manual, upload foto, edit, hapus & import Excel.</p></div>
                         <div class="flex items-center space-x-3">
                             <input type="file" id="excelSiswa" class="hidden" onchange="importExcelSiswa(this)">
                             <button onclick="document.getElementById('excelSiswa').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm flex items-center"><i class="fa-solid fa-file-excel mr-2"></i>Import Excel</button>
@@ -280,14 +255,13 @@
                         </div>
                     </div>
                     <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
-                        <div class="overflow-x-auto"><table class="w-full text-left border-collapse">
+                        <table class="w-full text-left border-collapse">
                             <thead><tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold"><th class="p-4">Foto</th><th class="p-4">NIS</th><th class="p-4">Nama Siswa</th><th class="p-4">Rombel</th><th class="p-4 text-center">Aksi</th></tr></thead>
                             <tbody class="divide-y divide-slate-100 text-sm">
             `;
-            if(data.length === 0) {
-                html += `<tr><td colspan="5" class="p-8 text-center text-slate-400">Belum ada data siswa.</td></tr>`;
-            } else {
-                data.forEach((s) => {
+            if(data.length === 0) html += `<tr><td colspan="5" class="p-8 text-center text-slate-400">Belum ada data siswa.</td></tr>`;
+            else {
+                data.forEach(s => {
                     html += `
                         <tr class="hover:bg-slate-50/50">
                             <td class="p-4"><img src="${s.foto || 'https://via.placeholder.com/150'}" class="w-10 h-10 object-cover rounded-xl border"></td>
@@ -302,70 +276,55 @@
                     `;
                 });
             }
-            html += `</tbody></table></div></div></div>`;
+            html += `</tbody></table></div></div>`;
             document.getElementById('mainContent').innerHTML = html;
         }
 
         async function openFormSiswa(nis = '', nama = '', rombel = '', foto = '') {
             let kelasList = await fetchStein('kelas');
             let options = kelasList.map(k => `<option value="${k.nama_rombel}" ${rombel === k.nama_rombel ? 'selected' : ''}>${k.nama_rombel}</option>`).join('');
-            
             let html = `
-                <form onsubmit="submitFormSiswa(event, '${nis}')" class="space-y-4">
-                    <div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">NIS</label><input type="text" id="inputNis" value="${nis}" ${nis ? 'readonly' : 'required'} class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl outline-none"></div>
-                    <div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Nama Lengkap</label><input type="text" id="inputNama" value="${nama}" required class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl outline-none"></div>
-                    <div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Rombel / Kelas</label><select id="inputRombel" required class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl outline-none"><option value="">Pilih Rombel</option>${options}</select></div>
-                    <div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Foto (Upload File / URL)</label><input type="file" id="inputFotoFile" onchange="convertImageToBase64(this)" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"><input type="hidden" id="inputFotoUrl" value="${foto}"></div>
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-md transition">Simpan Data Siswa</button>
+                <form onsubmit="submitSiswa(event, '${nis}')" class="space-y-4">
+                    <div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">NIS</label><input type="text" id="sNis" value="${nis}" ${nis ? 'readonly' : 'required'} class="w-full p-3 bg-slate-50 border rounded-xl outline-none"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Nama Siswa</label><input type="text" id="sNama" value="${nama}" required class="w-full p-3 bg-slate-50 border rounded-xl outline-none"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Rombel</label><select id="sRombel" required class="w-full p-3 bg-slate-50 border rounded-xl outline-none"><option value="">Pilih Rombel</option>${options}</select></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Upload Foto</label><input type="file" onchange="toBase64(this, 'sFoto')" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-blue-50 file:text-blue-700"><input type="hidden" id="sFoto" value="${foto}"></div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold">Simpan</button>
                 </form>
             `;
-            showModal(nis ? 'Edit Data Siswa' : 'Tambah Data Siswa', html);
+            showModal(nis ? 'Edit Siswa' : 'Tambah Siswa', html);
         }
 
-        function convertImageToBase64(element) {
-            let file = element.files[0];
+        function toBase64(element, targetId) {
             let reader = new FileReader();
-            reader.onloadend = function() {
-                document.getElementById('inputFotoUrl').value = reader.result;
-            }
-            reader.readAsDataURL(file);
+            reader.onloadend = () => document.getElementById(targetId).value = reader.result;
+            reader.readAsDataURL(element.files[0]);
         }
 
-        async function submitFormSiswa(e, oldNis) {
+        async function submitSiswa(e, oldNis) {
             e.preventDefault();
-            let nis = document.getElementById('inputNis').value;
-            let nama = document.getElementById('inputNama').value;
-            let rombel = document.getElementById('inputRombel').value;
-            let foto = document.getElementById('inputFotoUrl').value;
-
-            if(oldNis) {
-                await fetchStein('siswa', 'put', {nama, rombel, foto}, {nis: oldNis});
-            } else {
-                await fetchStein('siswa', 'post', [{nis, nama, rombel, foto}]);
-            }
-            closeModal();
-            loadDataSiswa();
+            let nis = document.getElementById('sNis').value;
+            let nama = document.getElementById('sNama').value;
+            let rombel = document.getElementById('sRombel').value;
+            let foto = document.getElementById('sFoto').value;
+            if(oldNis) await fetchStein('siswa', 'put', {nama, rombel, foto}, {nis: oldNis});
+            else await fetchStein('siswa', 'post', [{nis, nama, rombel, foto}]);
+            closeModal(); loadDataSiswa();
         }
 
         async function hapusSiswa(nis) {
-            if(confirm("Hapus data siswa ini?")) {
-                await fetchStein('siswa', 'delete', null, {nis: nis});
-                loadDataSiswa();
-            }
+            if(confirm("Hapus siswa ini?")) { await fetchStein('siswa', 'delete', null, {nis}); loadDataSiswa(); }
         }
 
         async function importExcelSiswa(input) {
-            let file = input.files[0];
             let reader = new FileReader();
-            reader.onload = async function(e) {
-                let data = new Uint8Array(e.target.result);
-                let workbook = XLSX.read(data, {type: 'array'});
+            reader.onload = async (e) => {
+                let workbook = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
                 let json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
                 await fetchStein('siswa', 'post', json);
-                alert("Import siswa berhasil!");
-                loadDataSiswa();
+                alert("Import Excel Berhasil!"); loadDataSiswa();
             };
-            reader.readAsArrayBuffer(file);
+            reader.readAsArrayBuffer(input.files[0]);
         }
 
         // --- 2. DATA KELAS ---
@@ -374,27 +333,18 @@
             let html = `
                 <div class="space-y-6">
                     <div class="flex justify-between items-center">
-                        <div><h1 class="text-2xl font-bold text-slate-800">Manajemen Data Kelas / Rombel</h1><p class="text-sm text-slate-500">Kelola rombongan belajar tingkat sekolah.</p></div>
-                        <button onclick="openFormKelas()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm flex items-center"><i class="fa-solid fa-plus mr-2"></i>Tambah Kelas</button>
+                        <div><h1 class="text-2xl font-bold text-slate-800">Data Kelas / Rombel</h1><p class="text-sm text-slate-500">Tambah kelas, edit, dan hapus.</p></div>
+                        <button onclick="openFormKelas()" class="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm">Tambah Kelas</button>
                     </div>
                     <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
-                        <table class="w-full text-left border-collapse">
-                            <thead><tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold"><th class="p-4">Nama Rombel / Kelas</th><th class="p-4">Tingkat</th><th class="p-4 text-center">Aksi</th></tr></thead>
-                            <tbody class="divide-y divide-slate-100 text-sm">
+                        <table class="w-full text-left">
+                            <thead><tr class="bg-slate-50 border-b text-xs uppercase text-slate-600"><th class="p-4">Nama Rombel</th><th class="p-4">Tingkat</th><th class="p-4 text-center">Aksi</th></tr></thead>
+                            <tbody class="divide-y text-sm">
             `;
             if(data.length === 0) html += `<tr><td colspan="3" class="p-8 text-center text-slate-400">Belum ada data kelas.</td></tr>`;
             else {
                 data.forEach(k => {
-                    html += `
-                        <tr class="hover:bg-slate-50/50">
-                            <td class="p-4 font-semibold text-slate-700">${k.nama_rombel}</td>
-                            <td class="p-4">${k.tingkat || '-'}</td>
-                            <td class="p-4 text-center space-x-2">
-                                <button onclick="openFormKelas('${k.nama_rombel}', '${k.tingkat}')" class="text-amber-600 hover:text-amber-800 p-1.5"><i class="fa-solid fa-pen-to-square"></i></button>
-                                <button onclick="hapusKelas('${k.nama_rombel}')" class="text-rose-600 hover:text-rose-800 p-1.5"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        </tr>
-                    `;
+                    html += `<tr><td class="p-4 font-semibold">${k.nama_rombel}</td><td class="p-4">${k.tingkat || '-'}</td><td class="p-4 text-center space-x-2"><button onclick="openFormKelas('${k.nama_rombel}', '${k.tingkat}')" class="text-amber-600"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="hapusKelas('${k.nama_rombel}')" class="text-rose-600"><i class="fa-solid fa-trash"></i></button></td></tr>`;
                 });
             }
             html += `</tbody></table></div></div>`;
@@ -403,33 +353,26 @@
 
         function openFormKelas(nama = '', tingkat = '') {
             let html = `
-                <form onsubmit="submitFormKelas(event, '${nama}')" class="space-y-4">
-                    <div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Nama Rombel</label><input type="text" id="namaRombel" value="${nama}" required class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl outline-none"></div>
-                    <div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tingkat</label><input type="text" id="tingkatKelas" value="${tingkat}" placeholder="Contoh: X, XI, XII" class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl outline-none"></div>
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-md transition">Simpan Kelas</button>
+                <form onsubmit="submitKelas(event, '${nama}')" class="space-y-4">
+                    <div><label class="block text-xs font-semibold uppercase mb-1">Nama Rombel</label><input type="text" id="kNama" value="${nama}" required class="w-full p-3 border rounded-xl"></div>
+                    <div><label class="block text-xs font-semibold uppercase mb-1">Tingkat</label><input type="text" id="kTingkat" value="${tingkat}" placeholder="X / XI / XII" class="w-full p-3 border rounded-xl"></div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold">Simpan</button>
                 </form>
             `;
             showModal(nama ? 'Edit Kelas' : 'Tambah Kelas', html);
         }
 
-        async function submitFormKelas(e, oldName) {
+        async function submitKelas(e, oldName) {
             e.preventDefault();
-            let nama_rombel = document.getElementById('namaRombel').value;
-            let tingkat = document.getElementById('tingkatKelas').value;
-            if(oldName) {
-                await fetchStein('kelas', 'put', {nama_rombel, tingkat}, {nama_rombel: oldName});
-            } else {
-                await fetchStein('kelas', 'post', [{nama_rombel, tingkat}]);
-            }
-            closeModal();
-            loadDataKelas();
+            let nama_rombel = document.getElementById('kNama').value;
+            let tingkat = document.getElementById('kTingkat').value;
+            if(oldName) await fetchStein('kelas', 'put', {nama_rombel, tingkat}, {nama_rombel: oldName});
+            else await fetchStein('kelas', 'post', [{nama_rombel, tingkat}]);
+            closeModal(); loadDataKelas();
         }
 
         async function hapusKelas(nama) {
-            if(confirm("Hapus kelas ini?")) {
-                await fetchStein('kelas', 'delete', null, {nama_rombel: nama});
-                loadDataKelas();
-            }
+            if(confirm("Hapus kelas?")) { await fetchStein('kelas', 'delete', null, {nama_rombel: nama}); loadDataKelas(); }
         }
 
         // --- 3. DATA GURU ---
@@ -438,33 +381,22 @@
             let html = `
                 <div class="space-y-6">
                     <div class="flex justify-between items-center">
-                        <div><h1 class="text-2xl font-bold text-slate-800">Manajemen Data Guru</h1><p class="text-sm text-slate-500">Kelola daftar tenaga pengajar sekolah.</p></div>
-                        <div class="flex items-center space-x-3">
+                        <div><h1 class="text-2xl font-bold text-slate-800">Data Guru</h1><p class="text-sm text-slate-500">Input manual, upload foto, edit, hapus & import Excel.</p></div>
+                        <div class="flex space-x-3">
                             <input type="file" id="excelGuru" class="hidden" onchange="importExcelGuru(this)">
-                            <button onclick="document.getElementById('excelGuru').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm flex items-center"><i class="fa-solid fa-file-excel mr-2"></i>Import Excel</button>
-                            <button onclick="openFormGuru()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm flex items-center"><i class="fa-solid fa-plus mr-2"></i>Tambah Guru</button>
+                            <button onclick="document.getElementById('excelGuru').click()" class="bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm">Import Excel</button>
+                            <button onclick="openFormGuru()" class="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm">Tambah Guru</button>
                         </div>
                     </div>
                     <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
-                        <table class="w-full text-left border-collapse">
-                            <thead><tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold"><th class="p-4">Foto</th><th class="p-4">NIP / ID</th><th class="p-4">Nama Lengkap</th><th class="p-4">Mapel Diampu</th><th class="p-4 text-center">Aksi</th></tr></thead>
-                            <tbody class="divide-y divide-slate-100 text-sm">
+                        <table class="w-full text-left">
+                            <thead><tr class="bg-slate-50 border-b text-xs uppercase text-slate-600"><th class="p-4">Foto</th><th class="p-4">NIP / ID</th><th class="p-4">Nama Guru</th><th class="p-4">Mapel</th><th class="p-4 text-center">Aksi</th></tr></thead>
+                            <tbody class="divide-y text-sm">
             `;
             if(data.length === 0) html += `<tr><td colspan="5" class="p-8 text-center text-slate-400">Belum ada data guru.</td></tr>`;
             else {
                 data.forEach(g => {
-                    html += `
-                        <tr class="hover:bg-slate-50/50">
-                            <td class="p-4"><img src="${g.foto || 'https://via.placeholder.com/150'}" class="w-10 h-10 object-cover rounded-xl border"></td>
-                            <td class="p-4 font-semibold text-slate-700">${g.nip}</td>
-                            <td class="p-4">${g.nama}</td>
-                            <td class="p-4">${g.mapel || '-'}</td>
-                            <td class="p-4 text-center space-x-2">
-                                <button onclick="openFormGuru('${g.nip}', '${g.nama}', '${g.mapel}', '${g.foto}')" class="text-amber-600 hover:text-amber-800 p-1.5"><i class="fa-solid fa-pen-to-square"></i></button>
-                                <button onclick="hapusGuru('${g.nip}')" class="text-rose-600 hover:text-rose-800 p-1.5"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        </tr>
-                    `;
+                    html += `<tr><td class="p-4"><img src="${g.foto || 'https://via.placeholder.com/150'}" class="w-10 h-10 object-cover rounded-xl border"></td><td class="p-4 font-semibold">${g.nip}</td><td class="p-4">${g.nama}</td><td class="p-4">${g.mapel || '-'}</td><td class="p-4 text-center space-x-2"><button onclick="openFormGuru('${g.nip}', '${g.nama}', '${g.mapel}', '${g.foto}')" class="text-amber-600"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="hapusGuru('${g.nip}')" class="text-rose-600"><i class="fa-solid fa-trash"></i></button></td></tr>`;
                 });
             }
             html += `</tbody></table></div></div>`;
@@ -473,60 +405,41 @@
 
         function openFormGuru(nip = '', nama = '', mapel = '', foto = '') {
             let html = `
-                <form onsubmit="submitFormGuru(event, '${nip}')" class="space-y-4">
-                    <div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">NIP / ID</label><input type="text" id="inputNip" value="${nip}" ${nip ? 'readonly' : 'required'} class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl outline-none"></div>
-                    <div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Nama Lengkap & Gelar</label><input type="text" id="inputNamaGuru" value="${nama}" required class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl outline-none"></div>
-                    <div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Mapel Diampu</label><input type="text" id="inputMapelGuru" value="${mapel}" placeholder="Contoh: Matematika" class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl outline-none"></div>
-                    <div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Foto</label><input type="file" id="inputFotoGuruFile" onchange="convertGuruBase64(this)" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"><input type="hidden" id="inputFotoGuruUrl" value="${foto}"></div>
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-md transition">Simpan Guru</button>
+                <form onsubmit="submitGuru(event, '${nip}')" class="space-y-4">
+                    <div><label class="block text-xs uppercase font-semibold mb-1">NIP / ID</label><input type="text" id="gNip" value="${nip}" ${nip?'readonly':'required'} class="w-full p-3 border rounded-xl"></div>
+                    <div><label class="block text-xs uppercase font-semibold mb-1">Nama Guru</label><input type="text" id="gNama" value="${nama}" required class="w-full p-3 border rounded-xl"></div>
+                    <div><label class="block text-xs uppercase font-semibold mb-1">Mapel</label><input type="text" id="gMapel" value="${mapel}" class="w-full p-3 border rounded-xl"></div>
+                    <div><label class="block text-xs uppercase font-semibold mb-1">Foto</label><input type="file" onchange="toBase64(this, 'gFoto')" class="w-full text-sm"><input type="hidden" id="gFoto" value="${foto}"></div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold">Simpan</button>
                 </form>
             `;
             showModal(nip ? 'Edit Guru' : 'Tambah Guru', html);
         }
 
-        function convertGuruBase64(element) {
-            let file = element.files[0];
-            let reader = new FileReader();
-            reader.onloadend = function() {
-                document.getElementById('inputFotoGuruUrl').value = reader.result;
-            }
-            reader.readAsDataURL(file);
-        }
-
-        async function submitFormGuru(e, oldNip) {
+        async function submitGuru(e, oldNip) {
             e.preventDefault();
-            let nip = document.getElementById('inputNip').value;
-            let nama = document.getElementById('inputNamaGuru').value;
-            let mapel = document.getElementById('inputMapelGuru').value;
-            let foto = document.getElementById('inputFotoGuruUrl').value;
-            if(oldNip) {
-                await fetchStein('guru', 'put', {nama, mapel, foto}, {nip: oldNip});
-            } else {
-                await fetchStein('guru', 'post', [{nip, nama, mapel, foto}]);
-            }
-            closeModal();
-            loadDataGuru();
+            let nip = document.getElementById('gNip').value;
+            let nama = document.getElementById('gNama').value;
+            let mapel = document.getElementById('gMapel').value;
+            let foto = document.getElementById('gFoto').value;
+            if(oldNip) await fetchStein('guru', 'put', {nama, mapel, foto}, {nip: oldNip});
+            else await fetchStein('guru', 'post', [{nip, nama, mapel, foto}]);
+            closeModal(); loadDataGuru();
         }
 
         async function hapusGuru(nip) {
-            if(confirm("Hapus guru ini?")) {
-                await fetchStein('guru', 'delete', null, {nip: nip});
-                loadDataGuru();
-            }
+            if(confirm("Hapus guru?")) { await fetchStein('guru', 'delete', null, {nip}); loadDataGuru(); }
         }
 
         async function importExcelGuru(input) {
-            let file = input.files[0];
             let reader = new FileReader();
-            reader.onload = async function(e) {
-                let data = new Uint8Array(e.target.result);
-                let workbook = XLSX.read(data, {type: 'array'});
+            reader.onload = async (e) => {
+                let workbook = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
                 let json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
                 await fetchStein('guru', 'post', json);
-                alert("Import guru berhasil!");
-                loadDataGuru();
+                alert("Import Guru Berhasil!"); loadDataGuru();
             };
-            reader.readAsArrayBuffer(file);
+            reader.readAsArrayBuffer(input.files[0]);
         }
 
         // --- 4. WALI KELAS ---
@@ -535,24 +448,18 @@
             let html = `
                 <div class="space-y-6">
                     <div class="flex justify-between items-center">
-                        <div><h1 class="text-2xl font-bold text-slate-800">Manajemen Wali Kelas</h1><p class="text-sm text-slate-500">Penugasan guru sebagai wali kelas per rombel.</p></div>
-                        <button onclick="openFormWali()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm flex items-center"><i class="fa-solid fa-plus mr-2"></i>Tambah Wali Kelas</button>
+                        <div><h1 class="text-2xl font-bold text-slate-800">Wali Kelas</h1><p class="text-sm text-slate-500">Penugasan guru sebagai wali kelas per rombel.</p></div>
+                        <button onclick="openFormWali()" class="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm">Tambah Wali Kelas</button>
                     </div>
                     <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
-                        <table class="w-full text-left border-collapse">
-                            <thead><tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold"><th class="p-4">Nama Rombel</th><th class="p-4">Nama Guru Wali Kelas</th><th class="p-4 text-center">Aksi</th></tr></thead>
-                            <tbody class="divide-y divide-slate-100 text-sm">
+                        <table class="w-full text-left">
+                            <thead><tr class="bg-slate-50 border-b text-xs uppercase text-slate-600"><th class="p-4">Rombel</th><th class="p-4">Nama Guru Wali Kelas</th><th class="p-4 text-center">Aksi</th></tr></thead>
+                            <tbody class="divide-y text-sm">
             `;
             if(data.length === 0) html += `<tr><td colspan="3" class="p-8 text-center text-slate-400">Belum ada penugasan wali kelas.</td></tr>`;
             else {
                 data.forEach(w => {
-                    html += `
-                        <tr class="hover:bg-slate-50/50">
-                            <td class="p-4 font-semibold text-slate-700">${w.rombel}</td>
-                            <td class="p-4">${w.nama_guru}</td>
-                            <td class="p-4 text-center"><button onclick="hapusWali('${w.rombel}')" class="text-rose-600 hover:text-rose-800 p-1.5"><i class="fa-solid fa-trash"></i></button></td>
-                        </tr>
-                    `;
+                    html += `<tr><td class="p-4 font-semibold">${w.rombel}</td><td class="p-4">${w.nama_guru}</td><td class="p-4 text-center"><button onclick="hapusWali('${w.rombel}')" class="text-rose-600"><i class="fa-solid fa-trash"></i></button></td></tr>`;
                 });
             }
             html += `</tbody></table></div></div>`;
@@ -560,54 +467,48 @@
         }
 
         async function openFormWali() {
-            let guruList = await fetchStein('guru');
-            let kelasList = await fetchStein('kelas');
-            let optGuru = guruList.map(g => `<option value="${g.nama}">${g.nama}</option>`).join('');
-            let optKelas = kelasList.map(k => `<option value="${k.nama_rombel}">${k.nama_rombel}</option>`).join('');
-
+            let guru = await fetchStein('guru');
+            let kelas = await fetchStein('kelas');
+            let optG = guru.map(g => `<option value="${g.nama}">${g.nama}</option>`).join('');
+            let optK = kelas.map(k => `<option value="${k.nama_rombel}">${k.nama_rombel}</option>`).join('');
             let html = `
-                <form onsubmit="submitFormWali(event)" class="space-y-4">
-                    <div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Pilih Rombel</label><select id="waliRombel" required class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl outline-none"><option value="">Pilih Kelas</option>${optKelas}</select></div>
-                    <div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Pilih Guru (Wali Kelas)</label><select id="waliGuru" required class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl outline-none"><option value="">Pilih Guru</option>${optGuru}</select></div>
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-md transition">Simpan Penugasan</button>
+                <form onsubmit="submitWali(event)" class="space-y-4">
+                    <div><label class="block text-xs uppercase font-semibold mb-1">Rombel</label><select id="wRombel" required class="w-full p-3 border rounded-xl"><option value="">Pilih Kelas</option>${optK}</select></div>
+                    <div><label class="block text-xs uppercase font-semibold mb-1">Guru Wali Kelas</label><select id="wGuru" required class="w-full p-3 border rounded-xl"><option value="">Pilih Guru</option>${optG}</select></div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold">Simpan</button>
                 </form>
             `;
             showModal('Tambah Wali Kelas', html);
         }
 
-        async function submitFormWali(e) {
+        async function submitWali(e) {
             e.preventDefault();
-            let rombel = document.getElementById('waliRombel').value;
-            let nama_guru = document.getElementById('waliGuru').value;
+            let rombel = document.getElementById('wRombel').value;
+            let nama_guru = document.getElementById('wGuru').value;
             await fetchStein('walikelas', 'post', [{rombel, nama_guru}]);
-            closeModal();
-            loadWaliKelas();
+            closeModal(); loadWaliKelas();
         }
 
         async function hapusWali(rombel) {
-            if(confirm("Hapus penugasan wali kelas ini?")) {
-                await fetchStein('walikelas', 'delete', null, {rombel: rombel});
-                loadWaliKelas();
-            }
+            if(confirm("Hapus wali kelas?")) { await fetchStein('walikelas', 'delete', null, {rombel}); loadWaliKelas(); }
         }
 
-        // --- 5. PERIODE, MANAJEMEN USER, PROFIL SEKOLAH ---
+        // --- 5. PERIODE TAHUN AJARAN ---
         async function loadPeriode() {
             let data = await fetchStein('periode');
             let html = `
                 <div class="space-y-6">
                     <div class="flex justify-between items-center">
-                        <div><h1 class="text-2xl font-bold text-slate-800">Periode Tahun Ajaran</h1><p class="text-sm text-slate-500">Tahun ajaran aktif sekolah.</p></div>
+                        <div><h1 class="text-2xl font-bold text-slate-800">Periode Tahun Ajaran</h1><p class="text-sm text-slate-500">Manajemen tahun ajaran aktif.</p></div>
                         <button onclick="openFormPeriode()" class="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm">Tambah Periode</button>
                     </div>
-                    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-6">
+                    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
                         <table class="w-full text-left">
-                            <thead><tr class="border-b text-slate-600 text-xs uppercase"><th class="p-3">Tahun Ajaran</th><th class="p-3">Semester</th><th class="p-3">Status Aktif</th></tr></thead>
+                            <thead><tr class="bg-slate-50 border-b text-xs uppercase text-slate-600"><th class="p-4">Tahun Ajaran</th><th class="p-4">Semester</th><th class="p-4">Status</th></tr></thead>
                             <tbody class="divide-y text-sm">
             `;
-            data.forEach(p => {
-                html += `<tr><td class="p-3 font-bold">${p.tahun}</td><td class="p-3">${p.semester}</td><td class="p-3"><span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold">${p.status || 'Aktif'}</span></td></tr>`;
-            });
+            if(data.length === 0) html += `<tr><td colspan="3" class="p-8 text-center text-slate-400">Belum ada periode.</td></tr>`;
+            else data.forEach(p => { html += `<tr><td class="p-4 font-bold">${p.tahun}</td><td class="p-4">${p.semester}</td><td class="p-4"><span class="px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold">${p.status || 'Aktif'}</span></td></tr>`; });
             html += `</tbody></table></div></div>`;
             document.getElementById('mainContent').innerHTML = html;
         }
@@ -617,7 +518,7 @@
                 <form onsubmit="submitPeriode(event)" class="space-y-4">
                     <div><label class="block text-xs uppercase font-semibold mb-1">Tahun Ajaran</label><input type="text" id="pTahun" placeholder="2025/2026" required class="w-full p-3 border rounded-xl"></div>
                     <div><label class="block text-xs uppercase font-semibold mb-1">Semester</label><select id="pSem" class="w-full p-3 border rounded-xl"><option value="Ganjil">Ganjil</option><option value="Genap">Genap</option></select></div>
-                    <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-xl font-semibold">Simpan</button>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold">Simpan</button>
                 </form>
             `;
             showModal('Tambah Periode', html);
@@ -628,17 +529,17 @@
             let tahun = document.getElementById('pTahun').value;
             let semester = document.getElementById('pSem').value;
             await fetchStein('periode', 'post', [{tahun, semester, status: 'Aktif'}]);
-            closeModal();
-            loadPeriode();
+            closeModal(); loadPeriode();
         }
 
+        // --- 6. MANAJEMEN USER ---
         async function loadManajemenUser() {
             let data = await fetchStein('users');
             let html = `
                 <div class="space-y-6">
                     <div class="flex justify-between items-center">
-                        <div><h1 class="text-2xl font-bold text-slate-800">Manajemen User Aplikasi</h1><p class="text-sm text-slate-500">Akses login admin dan guru.</p></div>
-                        <button onclick="openFormUser()" class="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold">Tambah User</button>
+                        <div><h1 class="text-2xl font-bold text-slate-800">Manajemen User</h1><p class="text-sm text-slate-500">Akses akun login admin dan guru.</p></div>
+                        <button onclick="openFormUser()" class="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm">Tambah User</button>
                     </div>
                     <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
                         <table class="w-full text-left">
@@ -646,7 +547,7 @@
                             <tbody class="divide-y text-sm">
             `;
             data.forEach(u => {
-                html += `<tr class="hover:bg-slate-50"><td class="p-4 font-semibold">${u.username}</td><td class="p-4">${u.nama || '-'}</td><td class="p-4"><span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">${u.role}</span></td><td class="p-4 text-center"><button onclick="hapusUser('${u.username}')" class="text-rose-600"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+                html += `<tr><td class="p-4 font-semibold">${u.username}</td><td class="p-4">${u.nama || '-'}</td><td class="p-4"><span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">${u.role}</span></td><td class="p-4 text-center"><button onclick="hapusUser('${u.username}')" class="text-rose-600"><i class="fa-solid fa-trash"></i></button></td></tr>`;
             });
             html += `</tbody></table></div></div>`;
             document.getElementById('mainContent').innerHTML = html;
@@ -659,7 +560,7 @@
                     <div><label class="block text-xs uppercase font-semibold mb-1">Password</label><input type="password" id="uPass" required class="w-full p-3 border rounded-xl"></div>
                     <div><label class="block text-xs uppercase font-semibold mb-1">Nama Lengkap</label><input type="text" id="uNama" required class="w-full p-3 border rounded-xl"></div>
                     <div><label class="block text-xs uppercase font-semibold mb-1">Role</label><select id="uRole" class="w-full p-3 border rounded-xl"><option value="guru">Guru</option><option value="admin">Admin</option></select></div>
-                    <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-xl font-semibold">Simpan User</button>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold">Simpan</button>
                 </form>
             `;
             showModal('Tambah User', html);
@@ -672,42 +573,42 @@
             let nama = document.getElementById('uNama').value;
             let role = document.getElementById('uRole').value;
             await fetchStein('users', 'post', [{username, password, nama, role}]);
-            closeModal();
-            loadManajemenUser();
+            closeModal(); loadManajemenUser();
         }
 
         async function hapusUser(username) {
-            if(confirm("Hapus user ini?")) {
-                await fetchStein('users', 'delete', null, {username: username});
-                loadManajemenUser();
-            }
+            if(confirm("Hapus user?")) { await fetchStein('users', 'delete', null, {username}); loadManajemenUser(); }
         }
 
-        async function loadProfilSekolah() {
+        // --- 7. MENU SEKOLAH & PROFIL (PENGATURAN TAMPILAN UTAMA) ---
+        async function loadMenuSekolah() {
             let profil = await fetchStein('profil');
-            let p = profil[0] || {nama_sekolah: '', npsn: '', alamat: ''};
+            let p = profil[0] || {nama_sekolah: '', npsn: '', alamat: '', logo: ''};
             let html = `
                 <div class="space-y-6 max-w-xl">
-                    <div><h1 class="text-2xl font-bold text-slate-800">Profil Sekolah</h1><p class="text-sm text-slate-500">Identitas lembaga pendidikan.</p></div>
-                    <form onsubmit="submitProfil(event)" class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 space-y-4">
-                        <div><label class="block text-xs uppercase font-semibold mb-1">Nama Sekolah</label><input type="text" id="psNama" value="${p.nama_sekolah || ''}" required class="w-full p-3 border rounded-xl"></div>
-                        <div><label class="block text-xs uppercase font-semibold mb-1">NPSN</label><input type="text" id="psNpsn" value="${p.npsn || ''}" class="w-full p-3 border rounded-xl"></div>
-                        <div><label class="block text-xs uppercase font-semibold mb-1">Alamat</label><textarea id="psAlamat" class="w-full p-3 border rounded-xl">${p.alamat || ''}</textarea></div>
-                        <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-xl font-semibold">Simpan Profil</button>
+                    <div><h1 class="text-2xl font-bold text-slate-800">Menu Pengaturan Sekolah</h1><p class="text-sm text-slate-500">Mengatur identitas, NPSN, Alamat, dan Logo Sekolah di seluruh aplikasi.</p></div>
+                    <form onsubmit="submitMenuSekolah(event)" class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 space-y-4">
+                        <div><label class="block text-xs uppercase font-semibold mb-1">Nama Sekolah</label><input type="text" id="msNama" value="${p.nama_sekolah || ''}" required class="w-full p-3 border rounded-xl"></div>
+                        <div><label class="block text-xs uppercase font-semibold mb-1">NPSN</label><input type="text" id="msNpsn" value="${p.npsn || ''}" class="w-full p-3 border rounded-xl"></div>
+                        <div><label class="block text-xs uppercase font-semibold mb-1">Alamat Lengkap</label><textarea id="msAlamat" class="w-full p-3 border rounded-xl">${p.alamat || ''}</textarea></div>
+                        <div><label class="block text-xs uppercase font-semibold mb-1">Logo Sekolah (Upload)</label><input type="file" onchange="toBase64(this, 'msLogo')" class="w-full text-sm"><input type="hidden" id="msLogo" value="${p.logo || ''}"></div>
+                        <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold">Simpan Pengaturan Sekolah</button>
                     </form>
                 </div>
             `;
             document.getElementById('mainContent').innerHTML = html;
         }
 
-        async function submitProfil(event) {
-            event.preventDefault();
-            let nama_sekolah = document.getElementById('psNama').value;
-            let npsn = document.getElementById('psNpsn').value;
-            let alamat = document.getElementById('psAlamat').value;
-            await fetchStein('profil', 'put', {nama_sekolah, npsn, alamat}, {npsn: npsn || '1'});
-            alert("Profil berhasil diperbarui!");
-            loadProfilHeader();
+        async function submitMenuSekolah(e) {
+            e.preventDefault();
+            let nama_sekolah = document.getElementById('msNama').value;
+            let npsn = document.getElementById('msNpsn').value;
+            let alamat = document.getElementById('msAlamat').value;
+            let logo = document.getElementById('msLogo').value;
+            await fetchStein('profil', 'put', {nama_sekolah, npsn, alamat, logo}, {npsn: npsn || '1'});
+            alert("Pengaturan sekolah berhasil disimpan!");
+            loadGlobalProfil();
+            loadMenuSekolah();
         }
 
 
@@ -715,13 +616,7 @@
         function loadGuruDashboard() {
             document.getElementById('mainContent').innerHTML = `
                 <div class="space-y-6">
-                    <div><h1 class="text-2xl font-bold text-slate-800">Selamat Datang, ${currentUser.nama || currentUser.username}</h1><p class="text-sm text-slate-500">Panel pengajar & manajemen absensi kelas.</p></div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
-                            <div class="text-slate-400 text-xs uppercase font-bold tracking-wider">Akses Cepat</div>
-                            <div class="mt-4"><button onclick="loadGuruAbsen()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold shadow-md"><i class="fa-solid fa-qrcode mr-2"></i>Buka Scanner QR</button></div>
-                        </div>
-                    </div>
+                    <div><h1 class="text-2xl font-bold text-slate-800">Dashboard Guru: ${currentUser.nama || currentUser.username}</h1><p class="text-sm text-slate-500">Gunakan menu di samping untuk scan QR absensi dan rekap.</p></div>
                 </div>
             `;
         }
@@ -729,17 +624,9 @@
         async function loadGuruMapel() {
             let mapel = await fetchStein('mapel');
             let myMapel = mapel.filter(m => m.guru === currentUser.nama);
-            let html = `
-                <div class="space-y-6">
-                    <div><h1 class="text-2xl font-bold text-slate-800">Data Mapel yang Diajarkan</h1><p class="text-sm text-slate-500">Mata pelajaran dan rombel bimbingan Anda.</p></div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            `;
-            if(myMapel.length === 0) html += `<div class="bg-white p-6 rounded-2xl border text-slate-400">Tidak ada jadwal mapel terdaftar untuk Anda.</div>`;
-            else {
-                myMapel.forEach(m => {
-                    html += `<div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs"><div class="font-bold text-lg text-blue-600">${m.nama_mapel}</div><div class="text-sm text-slate-500 mt-1">Rombel: ${m.rombel}</div></div>`;
-                });
-            }
+            let html = `<div class="space-y-6"><div><h1 class="text-2xl font-bold text-slate-800">Data Mapel yang Diajarkan</h1></div><div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+            if(myMapel.length === 0) html += `<div class="bg-white p-6 rounded-2xl border text-slate-400">Tidak ada mapel terdaftar untuk Anda.</div>`;
+            else myMapel.forEach(m => { html += `<div class="bg-white p-6 rounded-2xl border"><div class="font-bold text-blue-600">${m.nama_mapel}</div><div class="text-sm text-slate-500 mt-1">Rombel: ${m.rombel}</div></div>`; });
             html += `</div></div>`;
             document.getElementById('mainContent').innerHTML = html;
         }
@@ -748,112 +635,79 @@
             let siswa = await fetchStein('siswa');
             let html = `
                 <div class="space-y-6">
-                    <div><h1 class="text-2xl font-bold text-slate-800">Data Semua Siswa Per Rombel</h1><p class="text-sm text-slate-500">Daftar lengkap seluruh siswa aktif sekolah.</p></div>
+                    <div><h1 class="text-2xl font-bold text-slate-800">Data Siswa Per Rombel</h1></div>
                     <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
                         <table class="w-full text-left">
                             <thead><tr class="bg-slate-50 border-b text-xs uppercase text-slate-600"><th class="p-4">NIS</th><th class="p-4">Nama Siswa</th><th class="p-4">Rombel</th></tr></thead>
                             <tbody class="divide-y text-sm">
             `;
-            siswa.forEach(s => {
-                html += `<tr><td class="p-4 font-semibold">${s.nis}</td><td class="p-4">${s.nama}</td><td class="p-4"><span class="px-2 py-1 bg-slate-100 rounded text-xs font-bold">${s.rombel}</span></td></tr>`;
-            });
+            siswa.forEach(s => { html += `<tr><td class="p-4 font-semibold">${s.nis}</td><td class="p-4">${s.nama}</td><td class="p-4"><span class="px-2 py-1 bg-slate-100 rounded text-xs font-bold">${s.rombel}</span></td></tr>`; });
             html += `</tbody></table></div></div>`;
             document.getElementById('mainContent').innerHTML = html;
         }
 
-        // --- ABSENSI & QR SCAN ---
+        // --- SCANNER QR ---
         function loadGuruAbsen() {
             document.getElementById('mainContent').innerHTML = `
-                <div class="space-y-6 max-w-2xl mx-auto text-center">
-                    <div><h1 class="text-2xl font-bold text-slate-800">Scan QR Kehadiran Siswa</h1><p class="text-sm text-slate-500">Arahkan kamera perangkat ke kartu QR Code siswa.</p></div>
+                <div class="space-y-6 max-w-xl mx-auto text-center">
+                    <div><h1 class="text-2xl font-bold text-slate-800">Absensi & Scan QR Kamera</h1><p class="text-sm text-slate-500">Scan kartu QR siswa untuk mencatat kehadiran otomatis.</p></div>
                     <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
                         <div id="reader" class="w-full overflow-hidden rounded-xl"></div>
                         <div class="mt-4 flex justify-center space-x-3">
-                            <button onclick="initScanner()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold shadow-md"><i class="fa-solid fa-camera mr-2"></i>Mulai Kamera</button>
-                            <button onclick="stopScanner()" class="bg-slate-200 text-slate-700 px-6 py-3 rounded-xl font-semibold">Matikan Kamera</button>
+                            <button onclick="startScanner()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold">Mulai Kamera</button>
+                            <button onclick="stopScanner()" class="bg-slate-200 text-slate-700 px-6 py-3 rounded-xl font-semibold">Matikan</button>
                         </div>
                     </div>
                 </div>
             `;
-            initScanner();
+            startScanner();
         }
 
-        function initScanner() {
-            if (html5QrCode) { stopScanner(); }
+        function startScanner() {
+            if (html5QrCode) stopScanner();
             html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start(
                 { facingMode: "environment" },
-                { fps: 10, qrbox: { width: 250, height: 250 } },
-                async (decodedText) => {
-                    await processScanResult(decodedText);
+                { fps: 10, qrbox: 250 },
+                async (nis) => {
+                    let siswa = await fetchStein('siswa');
+                    let s = siswa.find(x => x.nis === nis);
+                    if(!s) { alert("NIS tidak ditemukan!"); return; }
+                    let today = new Date().toISOString().split('T')[0];
+                    await fetchStein('absensi', 'post', [{nis: s.nis, nama: s.nama, rombel: s.rombel, tanggal: today, jam_pelajaran: "1", mapel: "Umum", status: "Hadir"}]);
+                    alert(`Berhasil Absen Hadir: ${s.nama}`);
                 },
-                (errorMessage) => {}
-            ).catch(err => { console.error("Kamera gagal dimulai", err); });
+                (err) => {}
+            ).catch(e => {});
         }
 
         function stopScanner() {
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => { html5QrCode.clear(); }).catch(err => {});
-            }
+            if(html5QrCode) html5QrCode.stop().then(() => html5QrCode.clear()).catch(e => {});
         }
 
-        async function processScanResult(nis) {
-            let siswaList = await fetchStein('siswa');
-            let s = siswaList.find(x => x.nis === nis);
-            if(!s) {
-                alert(`NIS ${nis} tidak ditemukan dalam database siswa!`);
-                return;
-            }
-
-            let today = new Date().toISOString().split('T')[0];
-            let payload = [{
-                nis: s.nis,
-                nama: s.nama,
-                rombel: s.rombel,
-                tanggal: today,
-                jam_pelajaran: "1",
-                mapel: "Umum",
-                status: "Hadir"
-            }];
-            await fetchStein('absensi', 'post', payload);
-            alert(`Berhasil Absen: ${s.nama} (${s.rombel}) - Hadir`);
-        }
-
-        // --- BELUM ABSEN & AKSI MANUAL ---
+        // --- BELUM ABSEN & AKSI MANUAL + WA ---
         async function loadGuruBelumAbsen() {
             let siswa = await fetchStein('siswa');
             let absensi = await fetchStein('absensi');
             let today = new Date().toISOString().split('T')[0];
             let absenHariIni = absensi.filter(a => a.tanggal === today);
-            let belumAbsen = siswa.filter(s => !absenHariIni.some(a => a.nis === s.nis));
+            let belum = siswa.filter(s => !absenHariIni.some(a => a.nis === s.nis));
 
             let html = `
                 <div class="space-y-6">
                     <div class="flex justify-between items-center">
-                        <div><h1 class="text-2xl font-bold text-slate-800">Daftar Siswa Belum Absen</h1><p class="text-sm text-slate-500">Lakukan absensi manual bagi siswa yang tidak scan QR.</p></div>
-                        <button onclick="shareWhatsAppSemua()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm flex items-center"><i class="fa-brands fa-whatsapp mr-2"></i>Share WA Grup</button>
+                        <div><h1 class="text-2xl font-bold text-slate-800">Daftar Belum Absen</h1><p class="text-sm text-slate-500">Aksi manual (Hadir/Izin/Sakit/Alfa) & Share WA otomatis.</p></div>
+                        <button onclick="shareWhatsApp()" class="bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center shadow-sm"><i class="fa-brands fa-whatsapp mr-2"></i>Share WA Grup</button>
                     </div>
                     <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
                         <table class="w-full text-left">
-                            <thead><tr class="bg-slate-50 border-b text-xs uppercase text-slate-600"><th class="p-4">NIS</th><th class="p-4">Nama Siswa</th><th class="p-4">Rombel</th><th class="p-4 text-center">Aksi Manual (Hadir/Izin/Sakit/Alfa)</th></tr></thead>
+                            <thead><tr class="bg-slate-50 border-b text-xs uppercase text-slate-600"><th class="p-4">NIS</th><th class="p-4">Nama</th><th class="p-4">Rombel</th><th class="p-4 text-center">Aksi Manual</th></tr></thead>
                             <tbody class="divide-y text-sm">
             `;
-            if(belumAbsen.length === 0) html += `<tr><td colspan="4" class="p-8 text-center text-slate-400">Semua siswa sudah melakukan absensi hari ini!</td></tr>`;
+            if(belum.length === 0) html += `<tr><td colspan="4" class="p-8 text-center text-slate-400">Semua siswa sudah diabsen hari ini!</td></tr>`;
             else {
-                belumAbsen.forEach(s => {
-                    html += `
-                        <tr class="hover:bg-slate-50">
-                            <td class="p-4 font-semibold">${s.nis}</td>
-                            <td class="p-4">${s.nama}</td>
-                            <td class="p-4"><span class="px-2 py-1 bg-slate-100 rounded text-xs font-bold">${s.rombel}</span></td>
-                            <td class="p-4 text-center space-x-1">
-                                <button onclick="absenManual('${s.nis}', '${s.nama}', '${s.rombel}', 'Hadir')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-xs">Hadir</button>
-                                <button onclick="absenManual('${s.nis}', '${s.nama}', '${s.rombel}', 'Izin')" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-xs">Izin</button>
-                                <button onclick="absenManual('${s.nis}', '${s.nama}', '${s.rombel}', 'Sakit')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-xs">Sakit</button>
-                                <button onclick="absenManual('${s.nis}', '${s.nama}', '${s.rombel}', 'Alfa')" class="bg-rose-500 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-xs">Alfa</button>
-                            </td>
-                        </tr>
-                    `;
+                belum.forEach(s => {
+                    html += `<tr><td class="p-4 font-semibold">${s.nis}</td><td class="p-4">${s.nama}</td><td class="p-4"><span class="px-2 py-1 bg-slate-100 rounded text-xs font-bold">${s.rombel}</span></td><td class="p-4 text-center space-x-1"><button onclick="absenManual('${s.nis}', '${s.nama}', '${s.rombel}', 'Hadir')" class="bg-emerald-500 text-white px-3 py-1 rounded text-xs font-bold">Hadir</button><button onclick="absenManual('${s.nis}', '${s.nama}', '${s.rombel}', 'Izin')" class="bg-amber-500 text-white px-3 py-1 rounded text-xs font-bold">Izin</button><button onclick="absenManual('${s.nis}', '${s.nama}', '${s.rombel}', 'Sakit')" class="bg-blue-500 text-white px-3 py-1 rounded text-xs font-bold">Sakit</button><button onclick="absenManual('${s.nis}', '${s.nama}', '${s.rombel}', 'Alfa')" class="bg-rose-500 text-white px-3 py-1 rounded text-xs font-bold">Alfa</button></td></tr>`;
                 });
             }
             html += `</tbody></table></div></div>`;
@@ -862,118 +716,81 @@
 
         async function absenManual(nis, nama, rombel, status) {
             let today = new Date().toISOString().split('T')[0];
-            let payload = [{
-                nis: nis,
-                nama: nama,
-                rombel: rombel,
-                tanggal: today,
-                jam_pelajaran: "1",
-                mapel: "Manual",
-                status: status
-            }];
-            await fetchStein('absensi', 'post', payload);
+            await fetchStein('absensi', 'post', [{nis, nama, rombel, tanggal: today, jam_pelajaran: "1", mapel: "Manual", status}]);
             loadGuruBelumAbsen();
         }
 
-        function shareWhatsAppSemua() {
-            let text = `*REKAP ABSENSI HARIAN SISWA*%0ATanggal: ${new Date().toLocaleDateString('id-ID')}%0ASilakan cek rekap lengkap di portal sekolah.`;
+        function shareWhatsApp() {
+            let text = `*LAPORAN ABSENSI KELAS*%0ATanggal: ${new Date().toLocaleDateString('id-ID')}%0ASilakan cek rekapitulasi lengkap melalui portal sekolah.`;
             window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
         }
 
-        // --- REKAP ABSENSI & FILTER + EXCEL ---
+        // --- REKAP & FILTER + EXCEL ---
         async function loadGuruRekap() {
             window.rekapDataGlobal = await fetchStein('absensi');
-            renderTabelRekap(window.rekapDataGlobal);
+            renderRekapTable(window.rekapDataGlobal);
         }
 
-        function renderTabelRekap(data) {
+        function renderRekapTable(data) {
             let html = `
                 <div class="space-y-6">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div><h1 class="text-2xl font-bold text-slate-800">Rekapitulasi Absensi</h1><p class="text-sm text-slate-500">Filter berdasarkan tanggal, nama, atau rombel dan download Excel.</p></div>
-                        <button onclick="exportExcelRekap()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm flex items-center"><i class="fa-solid fa-file-excel mr-2"></i>Download Excel</button>
+                    <div class="flex justify-between items-center">
+                        <div><h1 class="text-2xl font-bold text-slate-800">Rekap Absensi</h1></div>
+                        <button onclick="exportExcelRekap()" class="bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm"><i class="fa-solid fa-file-excel mr-2"></i>Download Excel</button>
                     </div>
-                    <!-- Filter Bar -->
                     <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div><label class="block text-xs uppercase font-semibold mb-1">Filter Tanggal</label><input type="date" id="filterTanggal" onchange="filterRekapData()" class="w-full p-2.5 border rounded-xl text-sm"></div>
-                        <div><label class="block text-xs uppercase font-semibold mb-1">Cari Nama / NIS</label><input type="text" id="filterNama" onkeyup="filterRekapData()" placeholder="Ketik nama siswa..." class="w-full p-2.5 border rounded-xl text-sm"></div>
-                        <div><label class="block text-xs uppercase font-semibold mb-1">Filter Rombel</label><input type="text" id="filterRombel" onkeyup="filterRekapData()" placeholder="Contoh: XII IPA" class="w-full p-2.5 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs uppercase font-semibold mb-1">Tanggal</label><input type="date" id="fTgl" onchange="filterRekap()" class="w-full p-2.5 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs uppercase font-semibold mb-1">Cari Nama / NIS</label><input type="text" id="fNama" onkeyup="filterRekap()" placeholder="Ketik nama..." class="w-full p-2.5 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs uppercase font-semibold mb-1">Rombel</label><input type="text" id="fRombel" onkeyup="filterRekap()" placeholder="Contoh: X IPA" class="w-full p-2.5 border rounded-xl text-sm"></div>
                     </div>
                     <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
-                        <table class="w-full text-left" id="tabelRekapExport">
-                            <thead><tr class="bg-slate-50 border-b text-xs uppercase text-slate-600"><th class="p-4">Tanggal</th><th class="p-4">NIS</th><th class="p-4">Nama</th><th class="p-4">Rombel</th><th class="p-4">Jam Ke</th><th class="p-4">Mapel</th><th class="p-4">Status</th></tr></thead>
+                        <table class="w-full text-left" id="tabelRekap">
+                            <thead><tr class="bg-slate-50 border-b text-xs uppercase text-slate-600"><th class="p-4">Tanggal</th><th class="p-4">NIS</th><th class="p-4">Nama</th><th class="p-4">Rombel</th><th class="p-4">Status</th></tr></thead>
                             <tbody class="divide-y text-sm" id="rekapTbody">
             `;
-            if(!data || data.length === 0) {
-                html += `<tr><td colspan="7" class="p-8 text-center text-slate-400">Belum ada data rekap absensi.</td></tr>`;
-            } else {
+            if(!data || data.length === 0) html += `<tr><td colspan="5" class="p-8 text-center text-slate-400">Belum ada data.</td></tr>`;
+            else {
                 data.forEach(a => {
-                    let badgeColor = a.status === 'Hadir' ? 'bg-emerald-100 text-emerald-700' : (a.status === 'Sakit' ? 'bg-blue-100 text-blue-700' : (a.status === 'Izin' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'));
-                    html += `
-                        <tr>
-                            <td class="p-4">${a.tanggal || '-'}</td>
-                            <td class="p-4 font-semibold">${a.nis || '-'}</td>
-                            <td class="p-4">${a.nama || '-'}</td>
-                            <td class="p-4">${a.rombel || '-'}</td>
-                            <td class="p-4">${a.jam_pelajaran || '1'}</td>
-                            <td class="p-4">${a.mapel || '-'}</td>
-                            <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${badgeColor}">${a.status}</span></td>
-                        </tr>
-                    `;
+                    html += `<tr><td class="p-4">${a.tanggal}</td><td class="p-4">${a.nis}</td><td class="p-4">${a.nama}</td><td class="p-4">${a.rombel}</td><td class="p-4"><span class="px-2 py-1 rounded text-xs font-bold bg-blue-100 text-blue-700">${a.status}</span></td></tr>`;
                 });
             }
             html += `</tbody></table></div></div>`;
             document.getElementById('mainContent').innerHTML = html;
         }
 
-        function filterRekapData() {
-            let tgl = document.getElementById('filterTanggal').value;
-            let nama = document.getElementById('filterNama').value.toLowerCase();
-            let rombel = document.getElementById('filterRombel').value.toLowerCase();
+        function filterRekap() {
+            let tgl = document.getElementById('fTgl').value;
+            let nama = document.getElementById('fNama').value.toLowerCase();
+            let rombel = document.getElementById('fRombel').value.toLowerCase();
 
             let filtered = window.rekapDataGlobal.filter(item => {
-                let matchTgl = tgl ? item.tanggal === tgl : true;
-                let matchNama = nama ? (item.nama && item.nama.toLowerCase().includes(nama)) || (item.nis && item.nis.includes(nama)) : true;
-                let matchRombel = rombel ? item.rombel && item.rombel.toLowerCase().includes(rombel) : true;
-                return matchTgl && matchNama && matchRombel;
+                let m1 = tgl ? item.tanggal === tgl : true;
+                let m2 = nama ? (item.nama && item.nama.toLowerCase().includes(nama)) || (item.nis && item.nis.includes(nama)) : true;
+                let m3 = rombel ? item.rombel && item.rombel.toLowerCase().includes(rombel) : true;
+                return m1 && m2 && m3;
             });
 
             let tbody = document.getElementById('rekapTbody');
             let html = '';
-            if(filtered.length === 0) {
-                html = `<tr><td colspan="7" class="p-8 text-center text-slate-400">Data tidak ditemukan sesuai filter.</td></tr>`;
-            } else {
+            if(filtered.length === 0) html = `<tr><td colspan="5" class="p-8 text-center text-slate-400">Tidak ditemukan.</td></tr>`;
+            else {
                 filtered.forEach(a => {
-                    let badgeColor = a.status === 'Hadir' ? 'bg-emerald-100 text-emerald-700' : (a.status === 'Sakit' ? 'bg-blue-100 text-blue-700' : (a.status === 'Izin' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'));
-                    html += `
-                        <tr>
-                            <td class="p-4">${a.tanggal || '-'}</td>
-                            <td class="p-4 font-semibold">${a.nis || '-'}</td>
-                            <td class="p-4">${a.nama || '-'}</td>
-                            <td class="p-4">${a.rombel || '-'}</td>
-                            <td class="p-4">${a.jam_pelajaran || '1'}</td>
-                            <td class="p-4">${a.mapel || '-'}</td>
-                            <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${badgeColor}">${a.status}</span></td>
-                        </tr>
-                    `;
+                    html += `<tr><td class="p-4">${a.tanggal}</td><td class="p-4">${a.nis}</td><td class="p-4">${a.nama}</td><td class="p-4">${a.rombel}</td><td class="p-4"><span class="px-2 py-1 rounded text-xs font-bold bg-blue-100 text-blue-700">${a.status}</span></td></tr>`;
                 });
             }
             tbody.innerHTML = html;
         }
 
         function exportExcelRekap() {
-            let table = document.getElementById("tabelRekapExport");
-            let wb = XLSX.utils.table_to_book(table, {sheet: "Rekap Absensi"});
-            XLSX.writeFile(wb, "Rekap_Absensi_Siswa.xlsx");
+            XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById("tabelRekap"), {sheet: "Rekap"}), "Rekap_Absensi.xlsx");
         }
 
         // --- MODAL UTILS ---
-        function showModal(title, content) {
+        function showModal(title, body) {
             document.getElementById('modalTitle').innerText = title;
-            document.getElementById('modalBody').innerHTML = content;
+            document.getElementById('modalBody').innerHTML = body;
             document.getElementById('modalContainer').classList.remove('hidden');
         }
-
         function closeModal() {
             document.getElementById('modalContainer').classList.add('hidden');
         }
