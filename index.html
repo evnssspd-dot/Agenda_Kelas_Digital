@@ -3,495 +3,390 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Kelas Digital SMP Islam Darussalam</title>
+    <title>Aplikasi Agenda & Absensi Kelas</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS untuk Export Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- HTML5-Qrcode untuk Scan QR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#165DFF',
-                        secondary: '#36CBCB',
-                        success: '#00B42A',
-                        warning: '#FF7D00',
-                        danger: '#F53F3F',
-                        dark: '#1D2129'
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
-                    }
-                }
-            }
-        }
+        const STEIN_URL = "https://api.steinhq.com/v1/storages/6a70b66092b1163e9728b63a";
     </script>
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .content-auto { content-visibility: auto; }
-            .card-shadow { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-            .sidebar-link { @apply flex items-center gap-3 p-3 rounded-lg transition-all hover:bg-primary/10 hover:text-primary; }
-            .sidebar-link.active { @apply bg-primary text-white font-medium; }
-            .btn { @apply px-4 py-2 rounded-lg font-medium transition-all focus:ring-2 focus:ring-primary/30; }
-            .btn-primary { @apply bg-primary text-white hover:bg-primary/90; }
-            .btn-success { @apply bg-success text-white hover:bg-success/90; }
-            .btn-warning { @apply bg-warning text-white hover:bg-warning/90; }
-            .btn-danger { @apply bg-danger text-white hover:bg-danger/90; }
-            .input-field { @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary; }
-            .table-cell { @apply px-4 py-3 text-sm; }
-        }
-    </style>
 </head>
-<body class="bg-gray-50 font-sans text-dark">
-    <!-- === KONFIGURASI LINK API BARU === -->
-    <script>
-        const STEIN_API_URL = "https://api.steinhq.com/v1/storages/6a70b66092b1163e9728b63a";
-        const APP_NAME = "Agenda Kelas Digital";
-    </script>
+<body class="bg-gray-100 font-sans antialiased">
 
     <!-- HALAMAN LOGIN -->
-    <div id="loginPage" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10 p-4">
-        <div class="bg-white rounded-2xl card-shadow p-8 w-full max-w-md">
+    <div id="loginPage" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-800 p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-8">
             <div class="text-center mb-8">
-                <i class="fa-solid fa-book-open text-4xl text-primary mb-2"></i>
-                <h1 class="text-2xl font-bold">Agenda Kelas Digital</h1>
-                <p class="text-gray-500 mt-1">SMP Islam Darussalam</p>
+                <i class="fa-solid fa-graduation-cap text-4xl text-blue-600 mb-2"></i>
+                <h1 class="text-2xl font-bold text-gray-800">Agenda & Absensi Kelas</h1>
+                <p class="text-sm text-gray-500">Silakan login untuk melanjutkan</p>
             </div>
-            <form id="loginForm">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                    <input type="text" id="username" class="input-field" placeholder="Masukkan username" required>
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Username / Email</label>
+                    <input type="text" id="loginUser" required class="mt-1 w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <input type="password" id="password" class="input-field" placeholder="Masukkan password" required>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="loginPass" required class="mt-1 w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
-                <button type="submit" class="btn btn-primary w-full">Masuk ke Sistem</button>
-                <p class="text-center text-xs text-gray-400 mt-4">*Akun: Username <b>Admin</b> Password <b>Admin123</b></p>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition">Login</button>
             </form>
         </div>
     </div>
 
-    <!-- HALAMAN UTAMA -->
-    <div id="mainPage" class="hidden min-h-screen flex">
-        <!-- SIDEBAR -->
-        <aside class="w-64 bg-white border-r border-gray-200 fixed h-full overflow-y-auto">
-            <div class="p-4 border-b border-gray-200">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-book-open text-xl text-primary"></i>
-                    <h2 class="font-bold text-lg">Agenda Kelas</h2>
+    <!-- HALAMAN UTAMA APLIKASI (DASHBOARD) -->
+    <div id="appPage" class="hidden min-h-screen flex flex-col">
+        <!-- Navbar -->
+        <header class="bg-white shadow-sm z-10">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <button onclick="toggleSidebar()" class="text-gray-600 hover:text-blue-600 md:hidden"><i class="fa-solid fa-bars text-xl"></i></button>
+                    <span id="schoolNameHeader" class="font-bold text-lg text-gray-800">Profil Sekolah</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="userRoleBadge" class="text-xs bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full font-semibold"></span>
+                    <button onclick="logout()" class="text-red-600 hover:text-red-800 text-sm font-medium"><i class="fa-solid fa-right-from-bracket mr-1"></i>Logout</button>
                 </div>
             </div>
-            <nav class="p-4 space-y-1">
-                <!-- MENU ADMIN -->
-                <div id="menuAdmin">
-                    <a href="#dashboard" class="sidebar-link active" data-page="dashboard">
-                        <i class="fa-solid fa-house w-5"></i><span>Dashboard</span>
-                    </a>
-                    <div class="pt-2 pb-1 px-3 text-xs font-semibold text-gray-400 uppercase">Data Master</div>
-                    <a href="#profilsekolah" class="sidebar-link" data-page="profilsekolah">
-                        <i class="fa-solid fa-building w-5"></i><span>Profil Sekolah</span>
-                    </a>
-                    <a href="#dataguru" class="sidebar-link" data-page="dataguru">
-                        <i class="fa-solid fa-chalkboard-user w-5"></i><span>Data Guru</span>
-                    </a>
-                    <a href="#datakelas" class="sidebar-link" data-page="datakelas">
-                        <i class="fa-solid fa-school w-5"></i><span>Data Kelas/Rombel</span>
-                    </a>
-                    <a href="#datasiswa" class="sidebar-link" data-page="datasiswa">
-                        <i class="fa-solid fa-user-graduate w-5"></i><span>Data Siswa</span>
-                    </a>
-                    <a href="#datamapel" class="sidebar-link" data-page="datamapel">
-                        <i class="fa-solid fa-book w-5"></i><span>Data Mata Pelajaran</span>
-                    </a>
-                    <a href="#walikelas" class="sidebar-link" data-page="walikelas">
-                        <i class="fa-solid fa-user-tie w-5"></i><span>Data Wali Kelas</span>
-                    </a>
-                    <a href="#periode" class="sidebar-link" data-page="periode">
-                        <i class="fa-solid fa-calendar w-5"></i><span>Tahun Ajaran</span>
-                    </a>
-                    <a href="#manajemenuser" class="sidebar-link" data-page="manajemenuser">
-                        <i class="fa-solid fa-users-gear w-5"></i><span>Manajemen User</span>
-                    </a>
-                </div>
-                <!-- MENU GURU -->
-                <div id="menuGuru" class="hidden">
-                    <a href="#dashboard" class="sidebar-link active" data-page="dashboard">
-                        <i class="fa-solid fa-house w-5"></i><span>Dashboard</span>
-                    </a>
-                    <div class="pt-2 pb-1 px-3 text-xs font-semibold text-gray-400 uppercase">Menu Guru</div>
-                    <a href="#mapeldiajarkan" class="sidebar-link" data-page="mapeldiajarkan">
-                        <i class="fa-solid fa-book w-5"></i><span>Mata Pelajaran Saya</span>
-                    </a>
-                    <a href="#datasiswa" class="sidebar-link" data-page="datasiswa">
-                        <i class="fa-solid fa-user-graduate w-5"></i><span>Data Siswa Per Rombel</span>
-                    </a>
-                    <a href="#absenqr" class="sidebar-link" data-page="absenqr">
-                        <i class="fa-solid fa-qrcode w-5"></i><span>Absen Scan QR</span>
-                    </a>
-                    <a href="#belumabsen" class="sidebar-link" data-page="belumabsen">
-                        <i class="fa-solid fa-clock w-5"></i><span>Belum Absen</span>
-                    </a>
-                    <a href="#rekapabsensi" class="sidebar-link" data-page="rekapabsensi">
-                        <i class="fa-solid fa-table-list w-5"></i><span>Rekap Absensi</span>
-                    </a>
-                </div>
-                <div class="pt-4 border-t border-gray-200 mt-4">
-                    <button id="btnLogout" class="sidebar-link text-danger hover:bg-danger/10 hover:text-danger w-full">
-                        <i class="fa-solid fa-right-from-bracket w-5"></i><span>Keluar</span>
-                    </button>
-                </div>
-            </nav>
-        </aside>
+        </header>
 
-        <!-- KONTEN UTAMA -->
-        <main class="ml-64 flex-1 min-h-screen p-6" id="contentArea"></main>
-    </div>
+        <div class="flex-1 flex">
+            <!-- Sidebar -->
+            <aside id="sidebar" class="bg-white w-64 border-r hidden md:block transition-all">
+                <div id="sidebarMenu" class="p-4 space-y-2">
+                    <!-- Dinamis berdasarkan Role (Admin / Guru) -->
+                </div>
+            </aside>
 
-    <!-- MODAL FORM -->
-    <div id="modalForm" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center p-4 border-b border-gray-200">
-                <h3 id="modalTitle" class="text-lg font-semibold">Form Data</h3>
-                <button id="closeModal" class="text-gray-500 hover:text-gray-700">
-                    <i class="fa-solid fa-xmark text-xl"></i>
-                </button>
-            </div>
-            <div id="modalBody" class="p-4"></div>
+            <!-- Main Content Area -->
+            <main class="flex-1 p-6 overflow-y-auto" id="mainContent">
+                <!-- Konten dinamis dirender lewat JavaScript -->
+            </main>
         </div>
     </div>
 
+    <!-- MODAL SCANNER QR -->
+    <div id="qrModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl max-w-lg w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Scan QR Code Siswa</h3>
+                <button onclick="closeQrModal()" class="text-gray-500 hover:text-gray-700"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div id="reader" class="w-full"></div>
+            <div class="mt-4 flex justify-end">
+                <button onclick="closeQrModal()" class="bg-gray-300 px-4 py-2 rounded-lg text-gray-700">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT UTAMA -->
     <script>
-        // === VARIABEL GLOBAL ===
         let currentUser = null;
-        let currentPage = "dashboard";
-        let html5QrCode;
 
-        // === FUNGSI KONEKSI & SIMPAN OTOMATIS KE STEIN HQ ===
-        async function ambilData(sheet) {
+        async function fetchStein(table, method = 'get', data = null, condition = null) {
+            let url = `${STEIN_URL}/${table}`;
             try {
-                const res = await fetch(`${STEIN_API_URL}/${sheet}`);
-                if (!res.ok) throw new Error("Gagal terhubung ke server");
-                return await res.json();
-            } catch (err) {
-                alert("⚠️ Gagal mengambil data: " + err.message);
-                return [];
-            }
-        }
-
-        async function tambahData(sheet, dataBaru) {
-            try {
-                const res = await fetch(`${STEIN_API_URL}/${sheet}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(dataBaru)
-                });
-                if (res.ok) {
-                    alert("✅ Data tersimpan otomatis ke database!");
-                    return true;
+                if (method === 'get') {
+                    let res = await fetch(url);
+                    return await res.json();
+                } else if (method === 'post') {
+                    let res = await fetch(url, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    });
+                    return await res.json();
+                } else if (method === 'put') {
+                    let res = await fetch(url, {
+                        method: 'PUT',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({condition: condition, set: data})
+                    });
+                    return await res.json();
+                } else if (method === 'delete') {
+                    let res = await fetch(url, {
+                        method: 'DELETE',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(condition)
+                    });
+                    return await res.json();
                 }
-                alert("❌ Gagal menyimpan data");
-                return false;
             } catch (err) {
-                alert("❌ Kesalahan koneksi: " + err.message);
-                return false;
+                console.error("Stein API Error:", err);
+                alert("Gagal terhubung ke Database Stein HQ.");
             }
         }
 
-        async function ubahData(sheet, kolomId, nilaiId, dataBaru) {
-            try {
-                const res = await fetch(`${STEIN_API_URL}/${sheet}/${kolomId}/${nilaiId}`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(dataBaru)
-                });
-                return res.ok;
-            } catch (err) {
-                alert("❌ Gagal mengubah data: " + err.message);
-                return false;
-            }
-        }
-
-        async function hapusData(sheet, kolomId, nilaiId) {
-            try {
-                const res = await fetch(`${STEIN_API_URL}/${sheet}/${kolomId}/${nilaiId}`, { method: "DELETE" });
-                return res.ok;
-            } catch (err) {
-                alert("❌ Gagal menghapus data: " + err.message);
-                return false;
-            }
-        }
-
-        // === FUNGSI LOGIN ===
-        document.getElementById("loginForm").addEventListener("submit", async e => {
+        async function handleLogin(e) {
             e.preventDefault();
-            const username = document.getElementById("username").value.trim();
-            const password = document.getElementById("password").value.trim();
-            
-            const users = await ambilData("users");
-            const userValid = users.find(u => u.username === username && u.password === password);
-            
-            if (userValid) {
-                currentUser = userValid;
-                sessionStorage.setItem("user", JSON.stringify(userValid));
-                tampilkanHalamanUtama();
+            const u = document.getElementById('loginUser').value;
+            const p = document.getElementById('loginPass').value;
+
+            // Cek Manajemen User dari Stein HQ (Tabel: users)
+            const users = await fetchStein('users');
+            const found = users.find(x => x.username === u && x.password === p);
+
+            if (found) {
+                currentUser = found;
+                localStorage.setItem('user', JSON.stringify(found));
+                initApp();
             } else {
-                alert("❌ Username atau password salah! Pastikan sudah dibuat di lembar 'users' Spreadsheet.");
-            }
-        });
-
-        // === TAMPILKAN HALAMAN UTAMA ===
-        function tampilkanHalamanUtama() {
-            document.getElementById("loginPage").classList.add("hidden");
-            document.getElementById("mainPage").classList.remove("hidden");
-            
-            // Tampilkan menu sesuai jabatan
-            if (currentUser.jabatan === "Admin") {
-                document.getElementById("menuAdmin").classList.remove("hidden");
-                document.getElementById("menuGuru").classList.add("hidden");
-            } else {
-                document.getElementById("menuGuru").classList.remove("hidden");
-                document.getElementById("menuAdmin").classList.add("hidden");
-            }
-
-            // Navigasi menu
-            document.querySelectorAll(".sidebar-link").forEach(link => {
-                link.addEventListener("click", e => {
-                    e.preventDefault();
-                    document.querySelectorAll(".sidebar-link").forEach(l => l.classList.remove("active"));
-                    link.classList.add("active");
-                    muatHalaman(link.dataset.page);
-                });
-            });
-
-            muatHalaman("dashboard");
-        }
-
-        // === MUAT KONTEN HALAMAN ===
-        async function muatHalaman(halaman) {
-            currentPage = halaman;
-            const konten = document.getElementById("contentArea");
-            
-            switch(halaman) {
-                case "dashboard":
-                    konten.innerHTML = `
-                    <div class="mb-6">
-                        <h1 class="text-2xl font-bold">Dashboard</h1>
-                        <p class="text-gray-500 mt-1">Selamat datang, ${currentUser.nama_lengkap} | Jabatan: ${currentUser.jabatan}</p>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                        <div class="bg-white rounded-xl p-5 card-shadow">
-                            <div class="flex justify-between items-center">
-                                <div><p class="text-gray-500 text-sm">Total Siswa</p><h3 class="text-2xl font-bold mt-1" id="jmlSiswa">0</h3></div>
-                                <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary"><i class="fa-solid fa-user-graduate"></i></div>
-                            </div>
-                        </div>
-                        <div class="bg-white rounded-xl p-5 card-shadow">
-                            <div class="flex justify-between items-center">
-                                <div><p class="text-gray-500 text-sm">Total Guru</p><h3 class="text-2xl font-bold mt-1" id="jmlGuru">0</h3></div>
-                                <div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary"><i class="fa-solid fa-chalkboard-user"></i></div>
-                            </div>
-                        </div>
-                        <div class="bg-white rounded-xl p-5 card-shadow">
-                            <div class="flex justify-between items-center">
-                                <div><p class="text-gray-500 text-sm">Total Kelas</p><h3 class="text-2xl font-bold mt-1" id="jmlKelas">0</h3></div>
-                                <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center text-success"><i class="fa-solid fa-school"></i></div>
-                            </div>
-                        </div>
-                        <div class="bg-white rounded-xl p-5 card-shadow">
-                            <div class="flex justify-between items-center">
-                                <div><p class="text-gray-500 text-sm">Kehadiran Hari Ini</p><h3 class="text-2xl font-bold mt-1" id="jmlHadir">-</h3></div>
-                                <div class="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center text-warning"><i class="fa-solid fa-check-to-slot"></i></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-xl p-5 card-shadow">
-                        <h3 class="font-semibold mb-3">📌 Panduan Singkat</h3>
-                        <ul class="text-sm text-gray-600 space-y-2">
-                            <li>• Isi data langsung di menu aplikasi → otomatis tersimpan ke Google Spreadsheet</li>
-                            <li>• Matikan fitur Authentication di Stein HQ agar simpan berjalan lancar</li>
-                            <li>• Gunakan fitur Scan QR untuk mencatat kehadiran siswa</li>
-                            <li>• Rekap absensi bisa dibagikan ke WhatsApp atau diunduh jadi Excel</li>
-                        </ul>
-                    </div>
-                    `;
-                    // Muat statistik otomatis
-                    const [siswa, guru, kelas] = await Promise.all([ambilData("siswa"), ambilData("guru"), ambilData("kelas")]);
-                    document.getElementById("jmlSiswa").textContent = siswa.length;
-                    document.getElementById("jmlGuru").textContent = guru.length;
-                    document.getElementById("jmlKelas").textContent = kelas.length;
-                    break;
-
-                case "dataguru":
-                    konten.innerHTML = `
-                    <div class="mb-6 flex justify-between items-center">
-                        <div><h1 class="text-2xl font-bold">Data Guru</h1><p class="text-gray-500">Kelola data tenaga pendidik</p></div>
-                        <button onclick="bukaFormGuru()" class="btn btn-primary"><i class="fa-solid fa-plus mr-2"></i>Tambah Guru</button>
-                    </div>
-                    <div class="bg-white rounded-xl p-5 card-shadow">
-                        <div class="overflow-x-auto">
-                            <table class="w-full border-collapse">
-                                <thead class="bg-gray-50 border-b">
-                                    <tr>
-                                        <th class="table-cell text-left">NIP</th>
-                                        <th class="table-cell text-left">Nama Lengkap</th>
-                                        <th class="table-cell text-left">No HP</th>
-                                        <th class="table-cell text-center">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabelGuru"><tr><td colspan="4" class="p-4 text-center text-gray-400">Memuat data...</td></tr></tbody>
-                            </table>
-                        </div>
-                    </div>
-                    `;
-                    muatTabelGuru();
-                    break;
-
-                case "absenqr":
-                    konten.innerHTML = `
-                    <div class="mb-6"><h1 class="text-2xl font-bold">Absen Scan QR</h1><p class="text-gray-500">Arahkan kamera ke kode QR di kartu siswa</p></div>
-                    <div class="bg-white rounded-xl p-5 card-shadow max-w-2xl mx-auto">
-                        <div id="pemindaiQR" class="w-full h-80 bg-gray-100 rounded-lg mb-4 flex items-center justify-center text-gray-500">
-                            <p>Tekan tombol di bawah untuk mulai memindai</p>
-                        </div>
-                        <button onclick="mulaiScanQR()" class="btn btn-primary w-full mb-3">Mulai Scan Kamera</button>
-                        <button onclick="stopScanQR()" class="btn btn-danger w-full">Hentikan Scan</button>
-                        <div id="hasilScan" class="mt-4 p-3 bg-gray-50 rounded-lg hidden"></div>
-                    </div>
-                    `;
-                    break;
-
-                case "rekapabsensi":
-                    konten.innerHTML = `
-                    <div class="mb-6 flex flex-wrap justify-between items-center gap-3">
-                        <div><h1 class="text-2xl font-bold">Rekap Absensi</h1><p class="text-gray-500">Filter dan unduh data kehadiran</p></div>
-                        <div class="flex gap-2">
-                            <button onclick="bagiKeWA('Rekap Absensi Kelas Hari Ini')" class="btn btn-success"><i class="fa-brands fa-whatsapp mr-2"></i>Bagikan ke WA</button>
-                            <button onclick="downloadExcel()" class="btn btn-primary"><i class="fa-solid fa-download mr-2"></i>Unduh Excel</button>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-xl p-5 card-shadow">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                            <input type="date" class="input-field" placeholder="Pilih Tanggal">
-                            <select class="input-field"><option>Semua Rombel</option></select>
-                            <input type="text" class="input-field" placeholder="Cari Nama Siswa...">
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full border-collapse">
-                                <thead class="bg-gray-50 border-b">
-                                    <tr>
-                                        <th class="table-cell text-left">No</th>
-                                        <th class="table-cell text-left">NIS</th>
-                                        <th class="table-cell text-left">Nama Siswa</th>
-                                        <th class="table-cell text-left">Rombel</th>
-                                        <th class="table-cell text-left">Jam Ke</th>
-                                        <th class="table-cell text-left">Mapel</th>
-                                        <th class="table-cell text-left">Keterangan</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabelAbsensi"><tr><td colspan="7" class="p-4 text-center text-gray-400">Data akan muncul setelah ada absen</td></tr></tbody>
-                            </table>
-                        </div>
-                    </div>
-                    `;
-                    break;
-
-                default:
-                    konten.innerHTML = `<div class="bg-white rounded-xl p-5 card-shadow"><h3 class="font-semibold mb-2">Halaman ${halaman}</h3><p class="text-gray-500">Fitur sudah terhubung ke database, silakan isi data melalui form yang tersedia.</p></div>`;
+                alert("Username atau Password salah!");
             }
         }
 
-        // === FUNGSI KHUSUS MENU DATA GURU ===
-        async function muatTabelGuru() {
-            const data = await ambilData("guru");
-            const tbody = document.getElementById("tabelGuru");
-            if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400">Belum ada data guru</td></tr>`;
-                return;
-            }
-            tbody.innerHTML = data.map(g => `
-                <tr class="border-b">
-                    <td class="table-cell">${g.nip || "-"}</td>
-                    <td class="table-cell">${g.nama_guru || "-"}</td>
-                    <td class="table-cell">${g.no_hp || "-"}</td>
-                    <td class="table-cell text-center">
-                        <button class="btn btn-warning text-xs py-1 px-2 mr-1">Ubah</button>
-                        <button class="btn btn-danger text-xs py-1 px-2">Hapus</button>
-                    </td>
-                </tr>
-            `).join("");
-        }
-
-        function bukaFormGuru() {
-            document.getElementById("modalForm").classList.remove("hidden");
-            document.getElementById("modalTitle").textContent = "Tambah Data Guru";
-            document.getElementById("modalBody").innerHTML = `
-            <form id="formGuru">
-                <div class="mb-3">
-                    <label class="block text-sm font-medium mb-1">NIP</label>
-                    <input type="text" id="nip" class="input-field" required>
-                </div>
-                <div class="mb-3">
-                    <label class="block text-sm font-medium mb-1">Nama Lengkap</label>
-                    <input type="text" id="nama_guru" class="input-field" required>
-                </div>
-                <div class="mb-3">
-                    <label class="block text-sm font-medium mb-1">Nomor HP</label>
-                    <input type="tel" id="no_hp" class="input-field" required>
-                </div>
-                <button type="submit" class="btn btn-primary w-full">Simpan Otomatis</button>
-            </form>
-            `;
-            document.getElementById("formGuru").addEventListener("submit", async e => {
-                e.preventDefault();
-                const data = {
-                    nip: document.getElementById("nip").value,
-                    nama_guru: document.getElementById("nama_guru").value,
-                    no_hp: document.getElementById("no_hp").value
-                };
-                const berhasil = await tambahData("guru", data);
-                if (berhasil) {
-                    document.getElementById("modalForm").classList.add("hidden");
-                    muatTabelGuru();
-                }
-            });
-        }
-
-        // === FUNGSI PENDUKUNG ===
-        function mulaiScanQR() {
-            html5QrCode = new Html5Qrcode("pemindaiQR");
-            html5QrCode.start(
-                { facingMode: "environment" },
-                { fps: 10, qrbox: {width: 250, height: 250} },
-                (decodedText) => {
-                    html5QrCode.stop();
-                    document.getElementById("hasilScan").classList.remove("hidden");
-                    document.getElementById("hasilScan").innerHTML = `<p class="text-green-600 font-medium">✅ Berhasil memindai: ${decodedText}</p><p class="text-sm text-gray-500 mt-1">Data kehadiran tersimpan otomatis.</p>`;
-                },
-                (err) => console.log(err)
-            ).catch(err => alert("❌ Izin kamera ditolak: " + err.message));
-        }
-        function stopScanQR() { if(html5QrCode) html5QrCode.stop().catch(()=>{}); }
-        function bagiKeWA(pesan) { window.open(`https://wa.me/?text=${encodeURIComponent(pesan)}`, "_blank"); }
-        function downloadExcel() { alert("📂 File Excel sedang disiapkan..."); }
-
-        // === CEK SESI OTOMATIS ===
-        window.addEventListener("load", () => {
-            const simpanUser = sessionStorage.getItem("user");
-            if(simpanUser) { currentUser = JSON.parse(simpanUser); tampilkanHalamanUtama(); }
-        });
-
-        // === TOMBOL KELUAR & TUTUP MODAL ===
-        document.getElementById("btnLogout").addEventListener("click", () => {
-            sessionStorage.removeItem("user");
+        function logout() {
+            localStorage.removeItem('user');
             location.reload();
-        });
-        document.getElementById("closeModal").addEventListener("click", () => {
-            document.getElementById("modalForm").classList.add("hidden");
-        });
+        }
+
+        window.onload = () => {
+            const saved = localStorage.getItem('user');
+            if (saved) {
+                currentUser = JSON.parse(saved);
+                initApp();
+            }
+        }
+
+        function initApp() {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('appPage').classList.remove('hidden');
+            document.getElementById('userRoleBadge').innerText = currentUser.role.toUpperCase();
+            
+            renderSidebar();
+            loadDashboard();
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('hidden');
+        }
+
+        function renderSidebar() {
+            const menu = document.getElementById('sidebarMenu');
+            let html = '';
+            if (currentUser.role === 'admin') {
+                html = `
+                    <button onclick="loadAdminDashboard()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 text-gray-700 font-medium"><i class="fa-solid fa-chart-pie mr-2"></i>Dashboard</button>
+                    <button onclick="loadDataSiswa()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 text-gray-700 font-medium"><i class="fa-solid fa-users mr-2"></i>Data Siswa</button>
+                    <button onclick="loadDataKelas()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 text-gray-700 font-medium"><i class="fa-solid fa-school mr-2"></i>Data Kelas / Rombel</button>
+                    <button onclick="loadDataGuru()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 text-gray-700 font-medium"><i class="fa-solid fa-chalkboard-user mr-2"></i>Data Guru</button>
+                    <button onclick="loadWaliKelas()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 text-gray-700 font-medium"><i class="fa-solid fa-user-tie mr-2"></i>Wali Kelas</button>
+                    <button onclick="loadPeriode()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 text-gray-700 font-medium"><i class="fa-solid fa-calendar-days mr-2"></i>Periode Tahun Ajaran</button>
+                    <button onclick="loadManajemenUser()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 text-gray-700 font-medium"><i class="fa-solid fa-users-gear mr-2"></i>Manajemen User</button>
+                    <button onclick="loadProfilSekolah()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 text-gray-700 font-medium"><i class="fa-solid fa-building-columns mr-2"></i>Profil Sekolah</button>
+                `;
+            } else {
+                html = `
+                    <button onclick="loadGuruDashboard()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 text-gray-700 font-medium"><i class="fa-solid fa-chart-line mr-2"></i>Dashboard</button>
+                    <button onclick="loadGuruMapel()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 text-gray-700 font-medium"><i class="fa-solid fa-book mr-2"></i>Data Mapel</button>
+                    <button onclick="loadGuruSiswa()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 text-gray-700 font-medium"><i class="fa-solid fa-user-group mr-2"></i>Data Siswa Per Rombel</button>
+                    <button onclick="loadGuruAbsen()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 text-gray-700 font-medium"><i class="fa-solid fa-qrcode mr-2"></i>Absensi & QR Scan</button>
+                    <button onclick="loadGuruBelumAbsen()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 text-gray-700 font-medium"><i class="fa-solid fa-user-clock mr-2"></i>Belum Absen</button>
+                    <button onclick="loadGuruRekap()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 text-gray-700 font-medium"><i class="fa-solid fa-file-excel mr-2"></i>Rekap Absensi</button>
+                `;
+            }
+            menu.innerHTML = html;
+        }
+
+        function loadDashboard() {
+            if (currentUser.role === 'admin') loadAdminDashboard();
+            else loadGuruDashboard();
+        }
+
+        // --- ADMIN MODULES ---
+        function loadAdminDashboard() {
+            document.getElementById('mainContent').innerHTML = `<h2 class="text-2xl font-bold mb-4">Dashboard Admin</h2><p>Selamat datang Administrator di Sistem Agenda & Absensi Kelas.</p>`;
+        }
+
+        async function loadDataSiswa() {
+            let data = await fetchStein('siswa');
+            let html = `<h2 class="text-2xl font-bold mb-4">Data Siswa</h2>
+                <div class="mb-4 flex space-x-2">
+                    <button onclick="openFormSiswa()" class="bg-blue-600 text-white px-4 py-2 rounded">Tambah Siswa</button>
+                    <input type="file" id="excelSiswa" class="hidden" onchange="importExcelSiswa(this)">
+                    <button onclick="document.getElementById('excelSiswa').click()" class="bg-green-600 text-white px-4 py-2 rounded">Import Excel</button>
+                </div>
+                <div class="bg-white rounded shadow overflow-x-auto"><table class="w-full text-left border-collapse">
+                <thead><tr class="bg-gray-200 border-b">
+                    <th class="p-3">Foto</th><th class="p-3">NIS</th><th class="p-3">Nama</th><th class="p-3">Rombel</th><th class="p-3">Aksi</th>
+                </tr></thead><tbody>`;
+            data.forEach((s, i) => {
+                html += `<tr class="border-b">
+                    <td class="p-3"><img src="${s.foto || 'https://via.placeholder.com/40'}" class="w-10 h-10 object-cover rounded-full"></td>
+                    <td class="p-3">${s.nis}</td><td class="p-3">${s.nama}</td><td class="p-3">${s.rombel}</td>
+                    <td class="p-3"><button onclick="hapusSiswa('${s.nis}')" class="text-red-600"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>`;
+            });
+            html += `</tbody></table></div>`;
+            document.getElementById('mainContent').innerHTML = html;
+        }
+
+        async function hapusSiswa(nis) {
+            if(confirm('Hapus data siswa?')) {
+                await fetchStein('siswa', 'delete', null, {nis: nis});
+                loadDataSiswa();
+            }
+        }
+
+        function openFormSiswa() {
+            let html = `<h2 class="text-2xl font-bold mb-4">Form Tambah Siswa</h2>
+                <form onsubmit="simpanSiswa(event)" class="space-y-4 max-w-lg bg-white p-6 rounded shadow">
+                    <div><label>NIS</label><input type="text" id="nis" required class="w-full border p-2 rounded"></div>
+                    <div><label>Nama Siswa</label><input type="text" id="namaSiswa" required class="w-full border p-2 rounded"></div>
+                    <div><label>Rombel</label><input type="text" id="rombelSiswa" required class="w-full border p-2 rounded"></div>
+                    <div><label>Foto (URL/Base64)</label><input type="text" id="fotoSiswa" class="w-full border p-2 rounded"></div>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Simpan</button>
+                </form>`;
+            document.getElementById('mainContent').innerHTML = html;
+        }
+
+        async function simpanSiswa(e) {
+            e.preventDefault();
+            let payload = [{
+                nis: document.getElementById('nis').value,
+                nama: document.getElementById('namaSiswa').value,
+                rombel: document.getElementById('rombelSiswa').value,
+                foto: document.getElementById('fotoSiswa').value
+            }];
+            await fetchStein('siswa', 'post', payload);
+            loadDataSiswa();
+        }
+
+        async function importExcelSiswa(input) {
+            let file = input.files[0];
+            let reader = new FileReader();
+            reader.onload = async function(e) {
+                let data = new Uint8Array(e.target.result);
+                let workbook = XLSX.read(data, {type: 'array'});
+                let sheet = workbook.Sheets[workbook.SheetNames[0]];
+                let json = XLSX.utils.sheet_to_json(sheet);
+                await fetchStein('siswa', 'post', json);
+                alert('Import berhasil!');
+                loadDataSiswa();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- GURU MODULES ---
+        function loadGuruDashboard() {
+            document.getElementById('mainContent').innerHTML = `<h2 class="text-2xl font-bold mb-4">Dashboard Guru: ${currentUser.nama}</h2><p>Gunakan menu di samping untuk mengelola Mapel, Absen QR, dan Rekap.</p>`;
+        }
+
+        async function loadGuruMapel() {
+            let mapel = await fetchStein('mapel');
+            let myMapel = mapel.filter(m => m.guru === currentUser.nama);
+            let html = `<h2 class="text-2xl font-bold mb-4">Data Mapel yang Diajarkan</h2><ul class="bg-white rounded shadow p-4 space-y-2">`;
+            myMapel.forEach(m => {
+                html += `<li class="border-b pb-2"><strong>${m.nama_mapel}</strong> - Kelas: ${m.rombel}</li>`;
+            });
+            html += `</ul>`;
+            document.getElementById('mainContent').innerHTML = html;
+        }
+
+        async function loadGuruAbsen() {
+            let html = `<h2 class="text-2xl font-bold mb-4">Absensi & QR Scan</h2>
+                <button onclick="openQrScanner()" class="bg-green-600 text-white px-4 py-3 rounded-lg font-bold"><i class="fa-solid fa-camera mr-2"></i>Buka Kamera Scan QR</button>`;
+            document.getElementById('mainContent').innerHTML = html;
+        }
+
+        function openQrScanner() {
+            document.getElementById('qrModal').classList.remove('hidden');
+            const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+            scanner.render(onScanSuccess, onScanFailure);
+        }
+
+        function closeQrModal() {
+            document.getElementById('qrModal').classList.add('hidden');
+        }
+
+        async function onScanSuccess(decodedText) {
+            alert(`Berhasil Scan: NIS ${decodedText}`);
+            // Kirim data absensi otomatis ke database
+            let payload = [{
+                nis: decodedText,
+                tanggal: new Date().toISOString().split('T')[0],
+                jam_pelajaran: "1",
+                mapel: "Matematika",
+                status: "Hadir"
+            }];
+            await fetchStein('absensi', 'post', payload);
+            closeQrModal();
+        }
+
+        function onScanFailure(error) {
+            // Error handling scan jika diperlukan
+        }
+
+        async function loadGuruBelumAbsen() {
+            let siswa = await fetchStein('siswa');
+            let absensi = await fetchStein('absensi');
+            let hariIni = new Date().toISOString().split('T')[0];
+            let absenHariIni = absensi.filter(a => a.tanggal === hariIni);
+            let belum = siswa.filter(s => !absenHariIni.some(a => a.nis === s.nis));
+
+            let html = `<h2 class="text-2xl font-bold mb-4">Daftar Siswa Belum Absen</h2>
+                <div class="bg-white rounded shadow overflow-x-auto"><table class="w-full text-left border-collapse">
+                <thead><tr class="bg-gray-200 border-b"><th class="p-3">NIS</th><th class="p-3">Nama</th><th class="p-3">Rombel</th><th class="p-3">Aksi Manual</th></tr></thead><tbody>`;
+            belum.forEach(s => {
+                html += `<tr class="border-b">
+                    <td class="p-3">${s.nis}</td><td class="p-3">${s.nama}</td><td class="p-3">${s.rombel}</td>
+                    <td class="p-3 space-x-1">
+                        <button onclick="absenManual('${s.nis}', 'Hadir')" class="bg-green-500 text-white px-2 py-1 rounded text-xs">Hadir</button>
+                        <button onclick="absenManual('${s.nis}', 'Izin')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs">Izin</button>
+                        <button onclick="absenManual('${s.nis}', 'Sakit')" class="bg-blue-500 text-white px-2 py-1 rounded text-xs">Sakit</button>
+                        <button onclick="absenManual('${s.nis}', 'Alfa')" class="bg-red-500 text-white px-2 py-1 rounded text-xs">Alfa</button>
+                    </td>
+                </tr>`;
+            });
+            html += `</tbody></table></div>`;
+            document.getElementById('mainContent').innerHTML = html;
+        }
+
+        async function absenManual(nis, status) {
+            let payload = [{
+                nis: nis,
+                tanggal: new Date().toISOString().split('T')[0],
+                jam_pelajaran: "1",
+                mapel: "Manual",
+                status: status
+            }];
+            await fetchStein('absensi', 'post', payload);
+            loadGuruBelumAbsen();
+        }
+
+        async function loadGuruRekap() {
+            let absensi = await fetchStein('absensi');
+            let html = `<h2 class="text-2xl font-bold mb-4">Rekap Absensi</h2>
+                <button onclick="exportExcel()" class="bg-green-600 text-white px-4 py-2 rounded mb-4"><i class="fa-solid fa-file-excel mr-2"></i>Download Excel</button>
+                <div class="bg-white rounded shadow overflow-x-auto"><table class="w-full text-left border-collapse" id="rekapTable">
+                <thead><tr class="bg-gray-200 border-b"><th class="p-3">NIS</th><th class="p-3">Tanggal</th><th class="p-3">Jam Ke</th><th class="p-3">Mapel</th><th class="p-3">Status</th></tr></thead><tbody>`;
+            absensi.forEach(a => {
+                html += `<tr class="border-b"><td class="p-3">${a.nis}</td><td class="p-3">${a.tanggal}</td><td class="p-3">${a.jam_pelajaran}</td><td class="p-3">${a.mapel}</td><td class="p-3">${a.status}</td></tr>`;
+            });
+            html += `</tbody></table></div>`;
+            document.getElementById('mainContent').innerHTML = html;
+        }
+
+        function exportExcel() {
+            let table = document.getElementById("rekapTable");
+            let wb = XLSX.utils.table_to_book(table, {sheet: "Rekap Absen"});
+            XLSX.writeFile(wb, "Rekap_Absensi.xlsx");
+        }
+
+        // Placeholder fungsi admin tambahan agar tidak error saat dipanggil
+        function loadDataKelas() { loadAdminDashboard(); }
+        function loadDataGuru() { loadAdminDashboard(); }
+        function loadWaliKelas() { loadAdminDashboard(); }
+        function loadPeriode() { loadAdminDashboard(); }
+        function loadManajemenUser() { loadAdminDashboard(); }
+        function loadProfilSekolah() { loadAdminDashboard(); }
+        function loadGuruSiswa() { loadGuruMapel(); }
     </script>
 </body>
 </html>
