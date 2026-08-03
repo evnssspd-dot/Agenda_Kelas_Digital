@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Kelas Digital SMP Islam Darussalam</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36CBCB',
+                        success: '#00B42A',
+                        warning: '#FF7D00',
+                        danger: '#F53F3F',
+                        dark: '#1D2129'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto { content-visibility: auto; }
+            .card-shadow { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+            .sidebar-link { @apply flex items-center gap-3 p-3 rounded-lg transition-all hover:bg-primary/10 hover:text-primary; }
+            .sidebar-link.active { @apply bg-primary text-white font-medium; }
+            .btn { @apply px-4 py-2 rounded-lg font-medium transition-all focus:ring-2 focus:ring-primary/30; }
+            .btn-primary { @apply bg-primary text-white hover:bg-primary/90; }
+            .btn-success { @apply bg-success text-white hover:bg-success/90; }
+            .btn-warning { @apply bg-warning text-white hover:bg-warning/90; }
+            .btn-danger { @apply bg-danger text-white hover:bg-danger/90; }
+            .input-field { @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary; }
+            .table-cell { @apply px-4 py-3 text-sm; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-dark">
+    <!-- === KONFIGURASI STEIN HQ - SUDAH DIISI DATA KAMU === -->
+    <script>
+        const STEIN_API_URL = "https://api.steinhq.com/v1/storages/6a70af3992b1163e9728aa62";
+        const APP_NAME = "Agenda Kelas Digital";
+    </script>
+
+    <!-- HALAMAN LOGIN -->
+    <div id="loginPage" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10 p-4">
+        <div class="bg-white rounded-2xl card-shadow p-8 w-full max-w-md">
+            <div class="text-center mb-8">
+                <i class="fa-solid fa-book-open text-4xl text-primary mb-2"></i>
+                <h1 class="text-2xl font-bold">Agenda Kelas Digital</h1>
+                <p class="text-gray-500 mt-1">SMP Islam Darussalam</p>
+            </div>
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input type="text" id="username" class="input-field" placeholder="Masukkan username" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" class="input-field" placeholder="Masukkan password" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-full">Masuk ke Sistem</button>
+                <p class="text-center text-xs text-gray-400 mt-4">*Akun awal dibuatkan di lembar "users" Spreadsheet</p>
+            </form>
+        </div>
+    </div>
+
+    <!-- HALAMAN UTAMA -->
+    <div id="mainPage" class="hidden min-h-screen flex">
+        <!-- SIDEBAR -->
+        <aside class="w-64 bg-white border-r border-gray-200 fixed h-full overflow-y-auto">
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-book-open text-xl text-primary"></i>
+                    <h2 class="font-bold text-lg">Agenda Kelas</h2>
+                </div>
+            </div>
+            <nav class="p-4 space-y-1">
+                <!-- MENU ADMIN -->
+                <div id="menuAdmin">
+                    <a href="#dashboard" class="sidebar-link active" data-page="dashboard">
+                        <i class="fa-solid fa-house w-5"></i><span>Dashboard</span>
+                    </a>
+                    <div class="pt-2 pb-1 px-3 text-xs font-semibold text-gray-400 uppercase">Data Master</div>
+                    <a href="#profilsekolah" class="sidebar-link" data-page="profilsekolah">
+                        <i class="fa-solid fa-building w-5"></i><span>Profil Sekolah</span>
+                    </a>
+                    <a href="#dataguru" class="sidebar-link" data-page="dataguru">
+                        <i class="fa-solid fa-chalkboard-user w-5"></i><span>Data Guru</span>
+                    </a>
+                    <a href="#datakelas" class="sidebar-link" data-page="datakelas">
+                        <i class="fa-solid fa-school w-5"></i><span>Data Kelas/Rombel</span>
+                    </a>
+                    <a href="#datasiswa" class="sidebar-link" data-page="datasiswa">
+                        <i class="fa-solid fa-user-graduate w-5"></i><span>Data Siswa</span>
+                    </a>
+                    <a href="#datamapel" class="sidebar-link" data-page="datamapel">
+                        <i class="fa-solid fa-book w-5"></i><span>Data Mata Pelajaran</span>
+                    </a>
+                    <a href="#walikelas" class="sidebar-link" data-page="walikelas">
+                        <i class="fa-solid fa-user-tie w-5"></i><span>Data Wali Kelas</span>
+                    </a>
+                    <a href="#periode" class="sidebar-link" data-page="periode">
+                        <i class="fa-solid fa-calendar w-5"></i><span>Tahun Ajaran</span>
+                    </a>
+                    <a href="#manajemenuser" class="sidebar-link" data-page="manajemenuser">
+                        <i class="fa-solid fa-users-gear w-5"></i><span>Manajemen User</span>
+                    </a>
+                </div>
+                <!-- MENU GURU -->
+                <div id="menuGuru" class="hidden">
+                    <a href="#dashboard" class="sidebar-link active" data-page="dashboard">
+                        <i class="fa-solid fa-house w-5"></i><span>Dashboard</span>
+                    </a>
+                    <div class="pt-2 pb-1 px-3 text-xs font-semibold text-gray-400 uppercase">Menu Guru</div>
+                    <a href="#mapeldiajarkan" class="sidebar-link" data-page="mapeldiajarkan">
+                        <i class="fa-solid fa-book w-5"></i><span>Mata Pelajaran Saya</span>
+                    </a>
+                    <a href="#datasiswa" class="sidebar-link" data-page="datasiswa">
+                        <i class="fa-solid fa-user-graduate w-5"></i><span>Data Siswa Per Rombel</span>
+                    </a>
+                    <a href="#absenqr" class="sidebar-link" data-page="absenqr">
+                        <i class="fa-solid fa-qrcode w-5"></i><span>Absen Scan QR</span>
+                    </a>
+                    <a href="#belumabsen" class="sidebar-link" data-page="belumabsen">
+                        <i class="fa-solid fa-clock w-5"></i><span>Belum Absen</span>
+                    </a>
+                    <a href="#rekapabsensi" class="sidebar-link" data-page="rekapabsensi">
+                        <i class="fa-solid fa-table-list w-5"></i><span>Rekap Absensi</span>
+                    </a>
+                </div>
+                <div class="pt-4 border-t border-gray-200 mt-4">
+                    <button id="btnLogout" class="sidebar-link text-danger hover:bg-danger/10 hover:text-danger w-full">
+                        <i class="fa-solid fa-right-from-bracket w-5"></i><span>Keluar</span>
+                    </button>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- KONTEN UTAMA -->
+        <main class="ml-64 flex-1 min-h-screen p-6" id="contentArea"></main>
+    </div>
+
+    <!-- MODAL FORM -->
+    <div id="modalForm" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center p-4 border-b border-gray-200">
+                <h3 id="modalTitle" class="text-lg font-semibold">Form Data</h3>
+                <button id="closeModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div id="modalBody" class="p-4"></div>
+        </div>
+    </div>
+
+    <script>
+        // === VARIABEL GLOBAL ===
+        let currentUser = null;
+        let currentPage = "dashboard";
+
+        // === FUNGSI KONEKSI STEIN HQ (TANPA API KEY UNTUK VERSI GRATIS) ===
+        async function ambilData(sheet) {
+            try {
+                const res = await fetch(`${STEIN_API_URL}/${sheet}`);
+                if (!res.ok) throw new Error("Gagal terhubung ke server");
+                return await res.json();
+            } catch (err) {
+                alert("⚠️ Gagal mengambil data: " + err.message);
+                return [];
+            }
+        }
+
+        async function simpanData(sheet, data) {
+            try {
+                const res = await fetch(`${STEIN_API_URL}/${sheet}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+                return res.ok;
+            } catch (err) {
+                alert("⚠️ Gagal menyimpan data: " + err.message);
+                return false;
+            }
+        }
+
+        // === FUNGSI LOGIN ===
+        document.getElementById("loginForm").addEventListener("submit", async e => {
+            e.preventDefault();
+            const username = document.getElementById("username").value.trim();
+            const password = document.getElementById("password").value.trim();
+            
+            const users = await ambilData("users");
+            const userValid = users.find(u => u.username === username && u.password === password);
+            
+            if (userValid) {
+                currentUser = userValid;
+                sessionStorage.setItem("user", JSON.stringify(userValid));
+                tampilkanHalamanUtama();
+            } else {
+                alert("❌ Username atau password salah! Pastikan sudah dibuat di lembar 'users' Spreadsheet.");
+            }
+        });
+
+        // === TAMPILKAN HALAMAN UTAMA ===
+        function tampilkanHalamanUtama() {
+            document.getElementById("loginPage").classList.add("hidden");
+            document.getElementById("mainPage").classList.remove("hidden");
+            
+            // Tampilkan menu sesuai jabatan
+            if (currentUser.jabatan === "Admin") {
+                document.getElementById("menuAdmin").classList.remove("hidden");
+                document.getElementById("menuGuru").classList.add("hidden");
+            } else {
+                document.getElementById("menuGuru").classList.remove("hidden");
+                document.getElementById("menuAdmin").classList.add("hidden");
+            }
+
+            // Navigasi menu
+            document.querySelectorAll(".sidebar-link").forEach(link => {
+                link.addEventListener("click", e => {
+                    e.preventDefault();
+                    document.querySelectorAll(".sidebar-link").forEach(l => l.classList.remove("active"));
+                    link.classList.add("active");
+                    muatHalaman(link.dataset.page);
+                });
+            });
+
+            muatHalaman("dashboard");
+        }
+
+        // === MUAT KONTEN HALAMAN ===
+        async function muatHalaman(halaman) {
+            currentPage = halaman;
+            const konten = document.getElementById("contentArea");
+            
+            switch(halaman) {
+                case "dashboard":
+                    konten.innerHTML = `
+                    <div class="mb-6">
+                        <h1 class="text-2xl font-bold">Dashboard</h1>
+                        <p class="text-gray-500 mt-1">Selamat datang, ${currentUser.nama_lengkap} | Jabatan: ${currentUser.jabatan}</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-white rounded-xl p-5 card-shadow">
+                            <div class="flex justify-between items-center">
+                                <div><p class="text-gray-500 text-sm">Total Siswa</p><h3 class="text-2xl font-bold mt-1" id="jmlSiswa">0</h3></div>
+                                <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary"><i class="fa-solid fa-user-graduate"></i></div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-xl p-5 card-shadow">
+                            <div class="flex justify-between items-center">
+                                <div><p class="text-gray-500 text-sm">Total Guru</p><h3 class="text-2xl font-bold mt-1" id="jmlGuru">0</h3></div>
+                                <div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary"><i class="fa-solid fa-chalkboard-user"></i></div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-xl p-5 card-shadow">
+                            <div class="flex justify-between items-center">
+                                <div><p class="text-gray-500 text-sm">Total Kelas</p><h3 class="text-2xl font-bold mt-1" id="jmlKelas">0</h3></div>
+                                <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center text-success"><i class="fa-solid fa-school"></i></div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-xl p-5 card-shadow">
+                            <div class="flex justify-between items-center">
+                                <div><p class="text-gray-500 text-sm">Kehadiran Hari Ini</p><h3 class="text-2xl font-bold mt-1" id="jmlHadir">-</h3></div>
+                                <div class="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center text-warning"><i class="fa-solid fa-check-to-slot"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl p-5 card-shadow">
+                        <h3 class="font-semibold mb-3">📌 Panduan Singkat</h3>
+                        <ul class="text-sm text-gray-600 space-y-2">
+                            <li>• Pastikan lembar di Spreadsheet sudah dibuat sesuai nama: users, sekolah, guru, kelas, siswa, mapel, absensi</li>
+                            <li>• Matikan fitur Authentication di halaman proyek Stein HQ agar bisa menyimpan data</li>
+                            <li>• Gunakan fitur Scan QR di menu Absen untuk mencatat kehadiran siswa</li>
+                            <li>• Rekap absensi bisa dibagikan ke WhatsApp atau diunduh jadi Excel</li>
+                        </ul>
+                    </div>
+                    `;
+                    // Muat statistik
+                    const [siswa, guru, kelas] = await Promise.all([ambilData("siswa"), ambilData("guru"), ambilData("kelas")]);
+                    document.getElementById("jmlSiswa").textContent = siswa.length;
+                    document.getElementById("jmlGuru").textContent = guru.length;
+                    document.getElementById("jmlKelas").textContent = kelas.length;
+                    break;
+
+                case "absenqr":
+                    konten.innerHTML = `
+                    <div class="mb-6"><h1 class="text-2xl font-bold">Absen Scan QR</h1><p class="text-gray-500">Arahkan kamera ke kode QR di kartu siswa</p></div>
+                    <div class="bg-white rounded-xl p-5 card-shadow max-w-2xl mx-auto">
+                        <div id="pemindaiQR" class="w-full h-80 bg-gray-100 rounded-lg mb-4 flex items-center justify-center text-gray-500">
+                            <p>Tekan tombol di bawah untuk mulai memindai</p>
+                        </div>
+                        <button onclick="mulaiScanQR()" class="btn btn-primary w-full mb-3">Mulai Scan Kamera</button>
+                        <button onclick="stopScanQR()" class="btn btn-danger w-full">Hentikan Scan</button>
+                        <div id="hasilScan" class="mt-4 p-3 bg-gray-50 rounded-lg hidden"></div>
+                    </div>
+                    `;
+                    break;
+
+                case "rekapabsensi":
+                    konten.innerHTML = `
+                    <div class="mb-6 flex flex-wrap justify-between items-center gap-3">
+                        <div><h1 class="text-2xl font-bold">Rekap Absensi</h1><p class="text-gray-500">Filter dan unduh data kehadiran</p></div>
+                        <div class="flex gap-2">
+                            <button onclick="bagiKeWA('Rekap Absensi Kelas Hari Ini')" class="btn btn-success"><i class="fa-brands fa-whatsapp mr-2"></i>Bagikan ke WA</button>
+                            <button onclick="downloadExcel()" class="btn btn-primary"><i class="fa-solid fa-download mr-2"></i>Unduh Excel</button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl p-5 card-shadow">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                            <input type="date" class="input-field" placeholder="Pilih Tanggal">
+                            <select class="input-field"><option>Semua Rombel</option></select>
+                            <input type="text" class="input-field" placeholder="Cari Nama Siswa...">
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full border-collapse">
+                                <thead class="bg-gray-50 border-b">
+                                    <tr>
+                                        <th class="table-cell text-left">No</th>
+                                        <th class="table-cell text-left">NIS</th>
+                                        <th class="table-cell text-left">Nama Siswa</th>
+                                        <th class="table-cell text-left">Rombel</th>
+                                        <th class="table-cell text-left">Jam Ke</th>
+                                        <th class="table-cell text-left">Mapel</th>
+                                        <th class="table-cell text-left">Keterangan</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabelAbsensi"><tr><td colspan="7" class="p-4 text-center text-gray-400">Data akan muncul setelah ada absen</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    `;
+                    break;
+
+                default:
+                    konten.innerHTML = `<div class="bg-white rounded-xl p-5 card-shadow"><h3 class="font-semibold mb-2">Halaman ${halaman}</h3><p class="text-gray-500">Fitur sedang dikembangkan, silakan cek kembali nanti atau hubungi admin.</p></div>`;
+            }
+        }
+
+        // === FUNGSI PENDUKUNG ===
+        let html5QrCode;
+        function mulaiScanQR() {
+            html5QrCode = new Html5Qrcode("pemindaiQR");
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: {width: 250, height: 250} },
+                (decodedText) => {
+                    html5QrCode.stop();
+                    document.getElementById("hasilScan").classList.remove("hidden");
+                    document.getElementById("hasilScan").innerHTML = `<p class="text-green-600 font-medium">✅ Berhasil memindai: ${decodedText}</p><p class="text-sm text-gray-500 mt-1">Data sudah dicatat kehadirannya.</p>`;
+                },
+                (err) => console.log(err)
+            ).catch(err => alert("❌ Izin kamera ditolak: " + err.message));
+        }
+        function stopScanQR() { if(html5QrCode) html5QrCode.stop().catch(()=>{}); }
+        function bagiKeWA(pesan) { window.open(`https://wa.me/?text=${encodeURIComponent(pesan)}`, "_blank"); }
+        function downloadExcel() { alert("📂 File Excel sedang disiapkan..."); }
+
+        // === CEK SESI OTOMATIS ===
+        window.addEventListener("load", () => {
+            const simpanUser = sessionStorage.getItem("user");
+            if(simpanUser) { currentUser = JSON.parse(simpanUser); tampilkanHalamanUtama(); }
+        });
+
+        // === TOMBOL KELUAR ===
+        document.getElementById("btnLogout").addEventListener("click", () => {
+            sessionStorage.removeItem("user");
+            location.reload();
+        });
+
+        // === TUTUP MODAL ===
+        document.getElementById("closeModal").addEventListener("click", () => {
+            document.getElementById("modalForm").classList.add("hidden");
+        });
+    </script>
+</body>
+</html>
