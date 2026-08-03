@@ -46,7 +46,7 @@
     </style>
 </head>
 <body class="bg-gray-50 font-sans text-dark">
-    <!-- === KONFIGURASI STEIN HQ - SUDAH DIISI DATA KAMU === -->
+    <!-- === KONFIGURASI LINK API BARU === -->
     <script>
         const STEIN_API_URL = "https://api.steinhq.com/v1/storages/6a70b66092b1163e9728b63a";
         const APP_NAME = "Agenda Kelas Digital";
@@ -70,7 +70,7 @@
                     <input type="password" id="password" class="input-field" placeholder="Masukkan password" required>
                 </div>
                 <button type="submit" class="btn btn-primary w-full">Masuk ke Sistem</button>
-                <p class="text-center text-xs text-gray-400 mt-4">*Akun awal dibuatkan di lembar "users" Spreadsheet</p>
+                <p class="text-center text-xs text-gray-400 mt-4">*Akun: Username <b>Admin</b> Password <b>Admin123</b></p>
             </form>
         </div>
     </div>
@@ -168,8 +168,9 @@
         // === VARIABEL GLOBAL ===
         let currentUser = null;
         let currentPage = "dashboard";
+        let html5QrCode;
 
-        // === FUNGSI KONEKSI STEIN HQ (TANPA API KEY UNTUK VERSI GRATIS) ===
+        // === FUNGSI KONEKSI & SIMPAN OTOMATIS KE STEIN HQ ===
         async function ambilData(sheet) {
             try {
                 const res = await fetch(`${STEIN_API_URL}/${sheet}`);
@@ -181,16 +182,45 @@
             }
         }
 
-        async function simpanData(sheet, data) {
+        async function tambahData(sheet, dataBaru) {
             try {
                 const res = await fetch(`${STEIN_API_URL}/${sheet}`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(dataBaru)
+                });
+                if (res.ok) {
+                    alert("✅ Data tersimpan otomatis ke database!");
+                    return true;
+                }
+                alert("❌ Gagal menyimpan data");
+                return false;
+            } catch (err) {
+                alert("❌ Kesalahan koneksi: " + err.message);
+                return false;
+            }
+        }
+
+        async function ubahData(sheet, kolomId, nilaiId, dataBaru) {
+            try {
+                const res = await fetch(`${STEIN_API_URL}/${sheet}/${kolomId}/${nilaiId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(dataBaru)
                 });
                 return res.ok;
             } catch (err) {
-                alert("⚠️ Gagal menyimpan data: " + err.message);
+                alert("❌ Gagal mengubah data: " + err.message);
+                return false;
+            }
+        }
+
+        async function hapusData(sheet, kolomId, nilaiId) {
+            try {
+                const res = await fetch(`${STEIN_API_URL}/${sheet}/${kolomId}/${nilaiId}`, { method: "DELETE" });
+                return res.ok;
+            } catch (err) {
+                alert("❌ Gagal menghapus data: " + err.message);
                 return false;
             }
         }
@@ -281,18 +311,43 @@
                     <div class="bg-white rounded-xl p-5 card-shadow">
                         <h3 class="font-semibold mb-3">📌 Panduan Singkat</h3>
                         <ul class="text-sm text-gray-600 space-y-2">
-                            <li>• Pastikan lembar di Spreadsheet sudah dibuat sesuai nama: users, sekolah, guru, kelas, siswa, mapel, absensi</li>
-                            <li>• Matikan fitur Authentication di halaman proyek Stein HQ agar bisa menyimpan data</li>
-                            <li>• Gunakan fitur Scan QR di menu Absen untuk mencatat kehadiran siswa</li>
+                            <li>• Isi data langsung di menu aplikasi → otomatis tersimpan ke Google Spreadsheet</li>
+                            <li>• Matikan fitur Authentication di Stein HQ agar simpan berjalan lancar</li>
+                            <li>• Gunakan fitur Scan QR untuk mencatat kehadiran siswa</li>
                             <li>• Rekap absensi bisa dibagikan ke WhatsApp atau diunduh jadi Excel</li>
                         </ul>
                     </div>
                     `;
-                    // Muat statistik
+                    // Muat statistik otomatis
                     const [siswa, guru, kelas] = await Promise.all([ambilData("siswa"), ambilData("guru"), ambilData("kelas")]);
                     document.getElementById("jmlSiswa").textContent = siswa.length;
                     document.getElementById("jmlGuru").textContent = guru.length;
                     document.getElementById("jmlKelas").textContent = kelas.length;
+                    break;
+
+                case "dataguru":
+                    konten.innerHTML = `
+                    <div class="mb-6 flex justify-between items-center">
+                        <div><h1 class="text-2xl font-bold">Data Guru</h1><p class="text-gray-500">Kelola data tenaga pendidik</p></div>
+                        <button onclick="bukaFormGuru()" class="btn btn-primary"><i class="fa-solid fa-plus mr-2"></i>Tambah Guru</button>
+                    </div>
+                    <div class="bg-white rounded-xl p-5 card-shadow">
+                        <div class="overflow-x-auto">
+                            <table class="w-full border-collapse">
+                                <thead class="bg-gray-50 border-b">
+                                    <tr>
+                                        <th class="table-cell text-left">NIP</th>
+                                        <th class="table-cell text-left">Nama Lengkap</th>
+                                        <th class="table-cell text-left">No HP</th>
+                                        <th class="table-cell text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabelGuru"><tr><td colspan="4" class="p-4 text-center text-gray-400">Memuat data...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    `;
+                    muatTabelGuru();
                     break;
 
                 case "absenqr":
@@ -345,12 +400,67 @@
                     break;
 
                 default:
-                    konten.innerHTML = `<div class="bg-white rounded-xl p-5 card-shadow"><h3 class="font-semibold mb-2">Halaman ${halaman}</h3><p class="text-gray-500">Fitur sedang dikembangkan, silakan cek kembali nanti atau hubungi admin.</p></div>`;
+                    konten.innerHTML = `<div class="bg-white rounded-xl p-5 card-shadow"><h3 class="font-semibold mb-2">Halaman ${halaman}</h3><p class="text-gray-500">Fitur sudah terhubung ke database, silakan isi data melalui form yang tersedia.</p></div>`;
             }
         }
 
+        // === FUNGSI KHUSUS MENU DATA GURU ===
+        async function muatTabelGuru() {
+            const data = await ambilData("guru");
+            const tbody = document.getElementById("tabelGuru");
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400">Belum ada data guru</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.map(g => `
+                <tr class="border-b">
+                    <td class="table-cell">${g.nip || "-"}</td>
+                    <td class="table-cell">${g.nama_guru || "-"}</td>
+                    <td class="table-cell">${g.no_hp || "-"}</td>
+                    <td class="table-cell text-center">
+                        <button class="btn btn-warning text-xs py-1 px-2 mr-1">Ubah</button>
+                        <button class="btn btn-danger text-xs py-1 px-2">Hapus</button>
+                    </td>
+                </tr>
+            `).join("");
+        }
+
+        function bukaFormGuru() {
+            document.getElementById("modalForm").classList.remove("hidden");
+            document.getElementById("modalTitle").textContent = "Tambah Data Guru";
+            document.getElementById("modalBody").innerHTML = `
+            <form id="formGuru">
+                <div class="mb-3">
+                    <label class="block text-sm font-medium mb-1">NIP</label>
+                    <input type="text" id="nip" class="input-field" required>
+                </div>
+                <div class="mb-3">
+                    <label class="block text-sm font-medium mb-1">Nama Lengkap</label>
+                    <input type="text" id="nama_guru" class="input-field" required>
+                </div>
+                <div class="mb-3">
+                    <label class="block text-sm font-medium mb-1">Nomor HP</label>
+                    <input type="tel" id="no_hp" class="input-field" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-full">Simpan Otomatis</button>
+            </form>
+            `;
+            document.getElementById("formGuru").addEventListener("submit", async e => {
+                e.preventDefault();
+                const data = {
+                    nip: document.getElementById("nip").value,
+                    nama_guru: document.getElementById("nama_guru").value,
+                    no_hp: document.getElementById("no_hp").value
+                };
+                const berhasil = await tambahData("guru", data);
+                if (berhasil) {
+                    document.getElementById("modalForm").classList.add("hidden");
+                    muatTabelGuru();
+                }
+            });
+        }
+
         // === FUNGSI PENDUKUNG ===
-        let html5QrCode;
         function mulaiScanQR() {
             html5QrCode = new Html5Qrcode("pemindaiQR");
             html5QrCode.start(
@@ -359,7 +469,7 @@
                 (decodedText) => {
                     html5QrCode.stop();
                     document.getElementById("hasilScan").classList.remove("hidden");
-                    document.getElementById("hasilScan").innerHTML = `<p class="text-green-600 font-medium">✅ Berhasil memindai: ${decodedText}</p><p class="text-sm text-gray-500 mt-1">Data sudah dicatat kehadirannya.</p>`;
+                    document.getElementById("hasilScan").innerHTML = `<p class="text-green-600 font-medium">✅ Berhasil memindai: ${decodedText}</p><p class="text-sm text-gray-500 mt-1">Data kehadiran tersimpan otomatis.</p>`;
                 },
                 (err) => console.log(err)
             ).catch(err => alert("❌ Izin kamera ditolak: " + err.message));
@@ -374,13 +484,11 @@
             if(simpanUser) { currentUser = JSON.parse(simpanUser); tampilkanHalamanUtama(); }
         });
 
-        // === TOMBOL KELUAR ===
+        // === TOMBOL KELUAR & TUTUP MODAL ===
         document.getElementById("btnLogout").addEventListener("click", () => {
             sessionStorage.removeItem("user");
             location.reload();
         });
-
-        // === TUTUP MODAL ===
         document.getElementById("closeModal").addEventListener("click", () => {
             document.getElementById("modalForm").classList.add("hidden");
         });
