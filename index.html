@@ -94,6 +94,7 @@
         let currentUser = null;
         let activeQRReader = null;
         let isCameraActive = false;
+        let isScanningLocked = false; // Mencegah pemindaian ganda beruntun secara instan
 
         // --- AUTHENTICATION ---
         async function handleLogin(e) {
@@ -202,7 +203,6 @@
             stopCamera();
             document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('bg-indigo-50', 'text-indigo-600', 'active'));
             if(el) {
-                // Tandai aktif di desktop dan mobile jika ada elemen yang sama
                 let text = el.innerText.trim();
                 document.querySelectorAll('.menu-btn').forEach(b => {
                     if(b.innerText.trim() === text) {
@@ -815,7 +815,6 @@
             try {
                 let res = await fetch(`${STEIN}/mapel`);
                 let data = await res.json() || [];
-                // Filter berdasarkan nama guru yang sedang login
                 let myMapel = data.filter(m => m.guru && m.guru.toLowerCase().trim() === currentUser.nama.toLowerCase().trim());
                 
                 let html = `
@@ -963,7 +962,8 @@
                         <video id="qr-video" class="w-full h-full object-cover"></video>
                         <div id="cam-placeholder" class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs">Kamera dalam keadaan mati</div>
                     </div>
-                    <div id="scan-status" class="text-sm font-bold text-emerald-600"></div>
+                    <!-- Box Notifikasi Sukses / Status Scan -->
+                    <div id="scan-status" class="hidden p-4 rounded-xl text-sm font-bold transition-all duration-300"></div>
                 </div>
             `;
         }
@@ -978,11 +978,15 @@
                 document.getElementById('btn-stop-cam').classList.remove('hidden');
 
                 codeReader.decodeFromVideoDevice(null, 'qr-video', async (result, err) => {
-                    if (result && isCameraActive) {
+                    if (result && isCameraActive && !isScanningLocked) {
+                        isScanningLocked = true; // Kunci sementara agar tidak terbaca dobel
                         let nisScanned = result.text;
                         let jam = document.getElementById('scan-jam').value;
                         let mapel = document.getElementById('scan-mapel').value;
                         await processAbsenScan(nisScanned, jam, mapel);
+                        
+                        // Buka kembali kunci scan setelah 3 detik
+                        setTimeout(() => { isScanningLocked = false; }, 3000);
                     }
                 });
             } catch(e) {
@@ -993,6 +997,7 @@
 
         function stopCamera() {
             isCameraActive = false;
+            isScanningLocked = false;
             if(activeQRReader) {
                 try { activeQRReader.reset(); } catch(e){}
                 activeQRReader = null;
@@ -1013,12 +1018,28 @@
         }
 
         async function processAbsenScan(nis, jam, mapel) {
+            let statusBox = document.getElementById('scan-status');
             try {
-                let res = await fetch(`${STEIN}/siswa`);
-                let listSiswa = await res.json();
+                let today = new Date().toISOString().split('T')[0];
+
+                // 1. Cek apakah hari ini siswa tersebut sudah tercatat absen untuk mapel/jam yang sama atau secara umum
+                let resCheck = await fetch(`${STEIN}/absensi`);
+                let listAbsen = await resCheck.json() || [];
+                let alreadyAbsen = listAbsen.find(a => String(a.nis).trim() === String(nis).trim() && a.tanggal === today);
+
+                if (alreadyAbsen) {
+                    statusBox.className = "p-4 rounded-xl text-sm font-bold bg-amber-50 text-amber-700 border border-amber-200 block";
+                    statusBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> Siswa <strong>${alreadyAbsen.nama}</strong> (${alreadyAbsen.rombel}) sudah tercatat absen hari ini (${alreadyAbsen.status}). Data tidak diduplikasi.`;
+                    return;
+                }
+
+                // 2. Ambil data siswa untuk mendapatkan Nama dan Rombel
+                let resSiswa = await fetch(`${STEIN}/siswa`);
+                let listSiswa = await resSiswa.json();
                 let siswa = listSiswa.find(s => String(s.nis).trim() === String(nis).trim());
                 if(!siswa) {
-                    document.getElementById('scan-status').innerText = "Siswa dengan NIS " + nis + " tidak ditemukan!";
+                    statusBox.className = "p-4 rounded-xl text-sm font-bold bg-rose-50 text-rose-700 border border-rose-200 block";
+                    statusBox.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> Siswa dengan NIS ${nis} tidak ditemukan di database!`;
                     return;
                 }
 
@@ -1026,7 +1047,7 @@
                     nis: siswa.nis,
                     nama: siswa.nama,
                     rombel: siswa.rombel,
-                    tanggal: new Date().toISOString().split('T')[0],
+                    tanggal: today,
                     jam_pelajaran: jam,
                     mapel: mapel,
                     status: "Hadir"
@@ -1038,9 +1059,17 @@
                     body: JSON.stringify([payload])
                 });
 
-                document.getElementById('scan-status').innerText = `Berhasil Terscan & Masuk Database: ${siswa.nama} (${siswa.rombel}) - Hadir`;
-                setTimeout(() => { document.getElementById('scan-status').innerText = ''; }, 4000);
-            } catch(e) { alert("Gagal merekam absensi ke database."); }
+                // Tampilkan notifikasi berhasil scan yang jelas
+                statusBox.className = "p-4 rounded-xl text-sm font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 block";
+                statusBox.innerHTML = `<i class="fa-solid fa-circle-check mr-1 text-base"></i> Berhasil Scan! <strong>${siswa.nama}</strong> (${siswa.rombel}) tercatat <strong>Hadir</strong>.`;
+                
+                setTimeout(() => { 
+                    if(statusBox) statusBox.classList.add('hidden'); 
+                }, 4000);
+            } catch(e) { 
+                statusBox.className = "p-4 rounded-xl text-sm font-bold bg-rose-50 text-rose-700 border border-rose-200 block";
+                statusBox.innerHTML = "Gagal merekam absensi ke database.";
+            }
         }
 
         // --- 7. BELUM ABSEN & AKSI MANUAL ---
@@ -1089,16 +1118,27 @@
         }
 
         async function inputAbsenManual(nis, nama, rombel, status) {
+            let today = new Date().toISOString().split('T')[0];
             let payload = {
                 nis: nis,
                 nama: nama,
                 rombel: rombel,
-                tanggal: new Date().toISOString().split('T')[0],
+                tanggal: today,
                 jam_pelajaran: "1",
                 mapel: "Umum",
                 status: status
             };
             try {
+                // Cek duplikasi manual juga
+                let resCheck = await fetch(`${STEIN}/absensi`);
+                let listAbsen = await resCheck.json() || [];
+                let alreadyAbsen = listAbsen.find(a => String(a.nis).trim() === String(nis).trim() && a.tanggal === today);
+
+                if(alreadyAbsen) {
+                    alert(`Siswa ${nama} sudah tercatat absen hari ini (${alreadyAbsen.status}).`);
+                    return;
+                }
+
                 await fetch(`${STEIN}/absensi`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
