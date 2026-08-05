@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Agenda & Presensi Kelas Terpadu</title>
+    <title id="page-browser-title">Aplikasi Agenda & Presensi Kelas Terpadu</title>
     <!-- Tailwind CSS v4 -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- FontAwesome Icons -->
@@ -106,7 +106,8 @@
 
         function applyProfileBranding(p) {
             let appName = p.nama_aplikasi || "Agenda & Presensi Kelas";
-            document.getElementById('page-browser-title').innerText = appName;
+            let browserTitle = document.getElementById('page-browser-title');
+            if(browserTitle) browserTitle.innerText = appName;
             let headerTitle = document.getElementById('app-title-header');
             if(headerTitle) headerTitle.innerText = appName;
             let loginAppTitle = document.getElementById('login-app-title');
