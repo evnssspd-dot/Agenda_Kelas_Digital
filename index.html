@@ -70,14 +70,9 @@
         </header>
 
         <div class="flex flex-1 relative">
-            <!-- Sidebar Desktop -->
             <aside id="sidebar-container" class="w-72 bg-white border-r border-slate-200 p-4 space-y-1.5 hidden md:block shrink-0"></aside>
-            
-            <!-- Sidebar Mobile Drawer Backdrop & Container -->
             <div id="mobile-sidebar-backdrop" class="fixed inset-0 bg-slate-900/50 z-40 hidden md:hidden backdrop-blur-xs" onclick="toggleMobileSidebar()"></div>
             <aside id="mobile-sidebar-container" class="fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 p-4 space-y-1.5 z-50 transform -translate-x-full transition-transform duration-300 md:hidden flex flex-col shadow-2xl overflow-y-auto"></aside>
-
-            <!-- Main Content -->
             <main class="flex-1 p-4 md:p-8 overflow-y-auto w-full" id="main-content-container"></main>
         </div>
     </div>
@@ -95,7 +90,6 @@
         let isCameraActive = false;
         let isScanningLocked = false;
 
-        // --- AUTHENTICATION ---
         async function handleLogin(e) {
             e.preventDefault();
             const u = document.getElementById('login-user').value.trim();
@@ -108,25 +102,44 @@
 
                 if (found || (u === "admin" && p === "admin")) {
                     currentUser = found || { username: "admin", role: "admin", nama: "Administrator Sistem" };
-                    initAppSession();
+                    await evaluateUserRoleAndSession();
                 } else {
                     alert("Username atau Password salah!");
                 }
             } catch(err) {
                 if(u === "admin" && p === "admin") {
                     currentUser = { username: "admin", role: "admin", nama: "Administrator Sistem" };
-                    initAppSession();
+                    await evaluateUserRoleAndSession();
                 } else {
                     alert("Gagal terhubung ke server Stein HQ. Periksa koneksi internet.");
                 }
             }
         }
 
+        async function evaluateUserRoleAndSession() {
+            let roleText = currentUser.role || 'guru';
+            if (roleText.toLowerCase() !== 'admin') {
+                try {
+                    let resWali = await fetch(`${STEIN}/walikelas`).then(r => r.json()).catch(() => []);
+                    let checkWali = resWali.find(w => w.nama_guru && w.nama_guru.toLowerCase().trim() === currentUser.nama.toLowerCase().trim());
+                    if (checkWali) {
+                        roleText = `Wali Kelas (${checkWali.rombel})`;
+                    } else {
+                        roleText = 'Guru Mapel';
+                    }
+                } catch (e) {
+                    roleText = 'Guru Pengajar';
+                }
+            }
+            currentUser.computedRole = roleText;
+            initAppSession();
+        }
+
         function initAppSession() {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
             document.getElementById('user-display-name').innerText = currentUser.nama;
-            document.getElementById('user-display-role').innerText = currentUser.role;
+            document.getElementById('user-display-role').innerText = currentUser.computedRole || currentUser.role;
             buildSidebarMenu();
             loadDashboard();
         }
@@ -150,7 +163,6 @@
             }
         }
 
-        // --- SIDEBAR BUILDER ---
         function buildSidebarMenu() {
             let sbDesktop = document.getElementById('sidebar-container');
             let sbMobile = document.getElementById('mobile-sidebar-container');
@@ -176,6 +188,7 @@
                     <a href="#" onclick="handleMenuClick(loadAbsensiQR, this)" class="menu-btn flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 font-semibold transition"><i class="fa-solid fa-qrcode w-5"></i><span>Absensi & QR Scanner</span></a>
                     <a href="#" onclick="handleMenuClick(loadBelumAbsen, this)" class="menu-btn flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 font-semibold transition"><i class="fa-solid fa-user-clock w-5"></i><span>Input Absen Manual</span></a>
                     <a href="#" onclick="handleMenuClick(loadRekapAbsensi, this)" class="menu-btn flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 font-semibold transition"><i class="fa-solid fa-file-excel w-5"></i><span>Rekap Absensi & WhatsApp</span></a>
+                    <a href="#" onclick="handleMenuClick(loadProfilSekolah, this)" class="menu-btn flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 font-semibold transition"><i class="fa-solid fa-school w-5"></i><span>Profil Sekolah</span></a>
                 `;
             }
             sbDesktop.innerHTML = html;
@@ -183,7 +196,7 @@
                 <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-2">
                     <div>
                         <span class="block text-sm font-bold text-slate-800">${currentUser.nama}</span>
-                        <span class="inline-block bg-indigo-50 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full font-extrabold uppercase mt-0.5">${currentUser.role}</span>
+                        <span class="inline-block bg-indigo-50 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full font-extrabold uppercase mt-0.5">${currentUser.computedRole || currentUser.role}</span>
                     </div>
                     <button onclick="toggleMobileSidebar()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-base"></i></button>
                 </div>
@@ -192,9 +205,7 @@
         }
 
         function handleMenuClick(callback, el) {
-            if(window.innerWidth < 768) {
-                toggleMobileSidebar();
-            }
+            if(window.innerWidth < 768) { toggleMobileSidebar(); }
             callback(el);
         }
 
@@ -204,9 +215,7 @@
             if(el) {
                 let text = el.innerText.trim();
                 document.querySelectorAll('.menu-btn').forEach(b => {
-                    if(b.innerText.trim() === text) {
-                        b.classList.add('bg-indigo-50', 'text-indigo-600', 'active');
-                    }
+                    if(b.innerText.trim() === text) { b.classList.add('bg-indigo-50', 'text-indigo-600', 'active'); }
                 });
             }
         }
@@ -217,7 +226,6 @@
             document.getElementById('app-modal').classList.remove('hidden');
         }
 
-        // --- DASHBOARD ---
         async function loadDashboard(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
@@ -226,7 +234,7 @@
                     <div class="bg-gradient-to-r from-indigo-900 to-violet-900 text-white p-6 md:p-8 rounded-3xl shadow-xl">
                         <h2 class="text-xl md:text-2xl font-black mb-2">Selamat Datang, ${currentUser.nama}</h2>
                         <p class="text-indigo-200 text-xs md:text-sm max-w-2xl leading-relaxed">
-                            Sistem Agenda & Presensi Kelas Terpadu mendukung pengelolaan multi-pengguna, pemindaian QR Code real-time berkeamanan tinggi dengan kontrol kamera, pencetakan kartu pelajar, hingga rekapitulasi laporan terintegrasi Excel dan WhatsApp.
+                            Sistem Agenda & Presensi Kelas Terpadu mendukung pengelolaan multi-pengguna, pemindaian QR Code real-time, pencetakan kartu pelajar, hingga rekapitulasi laporan terintegrasi Excel dan WhatsApp.
                         </p>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -234,7 +242,7 @@
                             <div class="bg-indigo-50 text-indigo-600 p-3.5 rounded-xl"><i class="fa-solid fa-users text-lg"></i></div>
                             <div>
                                 <p class="text-xs text-slate-400 font-bold uppercase">Status Sesi</p>
-                                <h3 class="text-base font-black text-slate-800">${currentUser.role.toUpperCase()}</h3>
+                                <h3 class="text-sm font-black text-slate-800">${(currentUser.computedRole || currentUser.role).toUpperCase()}</h3>
                             </div>
                         </div>
                         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-4">
@@ -256,7 +264,6 @@
             `;
         }
 
-        // --- 1. DATA SISWA & CETAK KARTU ---
         async function loadDataSiswa(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
@@ -268,7 +275,7 @@
                     <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6">
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                             <div>
-                                <h3 class="text-base md:text-lg font-black text-slate-800">Data Siswa & Cetak Kartu</h3>
+                                <h3 class="text-base md:text-lg font-black text-slate-800">Data Siswa & Kartu</h3>
                                 <p class="text-xs text-slate-400">Kelola informasi siswa, cetak kartu QR, upload foto, dan import Excel.</p>
                             </div>
                             <div class="flex flex-wrap gap-2 w-full sm:w-auto">
@@ -329,10 +336,10 @@
                 <div id="print-card-area" class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-6 rounded-3xl shadow-xl max-w-sm mx-auto text-center border border-white/10 relative overflow-hidden">
                     <div class="absolute -right-10 -top-10 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl"></div>
                     <h4 class="text-xs uppercase tracking-widest text-indigo-300 font-bold mb-1">KARTU TANDA PELAJAR</h4>
-                    <p class="text-xs text-slate-400 mb-4">Agenda & Presensi Kelas</p>
+                    <p class="text-xs text-slate-400 mb-3">Agenda & Presensi Kelas</p>
                     <img src="${s.foto || 'https://via.placeholder.com/80'}" class="w-20 h-20 rounded-full object-cover mx-auto border-4 border-indigo-500/40 shadow-md mb-3">
-                    <h2 class="text-base font-extrabold text-white mb-0.5">${s.nama}</h2>
-                    <p class="text-xs text-indigo-200 mb-1">NIS: ${s.nis}</p>
+                    <h2 class="text-base font-extrabold text-white mb-0.5 leading-snug">${s.nama}</h2>
+                    <p class="text-xs text-indigo-200 mb-2 break-all px-2">NIS: ${s.nis}</p>
                     <span class="inline-block bg-indigo-600/50 border border-indigo-400/30 text-xs px-3 py-0.5 rounded-full font-bold mb-4">${s.rombel}</span>
                     <div class="bg-white p-3 rounded-2xl inline-block shadow-inner" id="qrcode-container"></div>
                     <p class="text-[10px] text-slate-400 mt-3">Scan QR ini untuk kehadiran otomatis.</p>
@@ -344,13 +351,16 @@
             `;
             openModal(html);
             setTimeout(() => {
-                document.getElementById('qrcode-container').innerHTML = '';
-                new QRCode(document.getElementById('qrcode-container'), {
-                    text: String(s.nis),
-                    width: 100,
-                    height: 100
-                });
-            }, 100);
+                let qrContainer = document.getElementById('qrcode-container');
+                if(qrContainer) {
+                    qrContainer.innerHTML = '';
+                    new QRCode(qrContainer, {
+                        text: String(s.nis),
+                        width: 90,
+                        height: 90
+                    });
+                }
+            }, 150);
         }
 
         async function openFormSiswa(data = null) {
@@ -400,7 +410,6 @@
                 rombel: document.getElementById('inp-rombel').value,
                 foto: document.getElementById('inp-foto').value.trim()
             };
-
             try {
                 if(oldNis) {
                     await fetch(`${STEIN}/siswa`, {
@@ -454,7 +463,6 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // --- 2. DATA KELAS ---
         async function loadDataKelas(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
@@ -553,7 +561,6 @@
             } catch(e) { alert("Gagal menghapus."); }
         }
 
-        // --- 3. DATA GURU ---
         async function loadDataGuru(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
@@ -692,7 +699,6 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // --- 4. WALI KELAS ---
         async function loadWaliKelas(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
@@ -791,7 +797,6 @@
             } catch(e) { alert("Gagal menghapus."); }
         }
 
-        // --- 5. PERIODE, USER, PROFIL, MAPEL GURU & INPUT MAPEL ---
         async function loadPeriode(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
@@ -822,12 +827,79 @@
         async function loadProfilSekolah(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
+            area.innerHTML = `<div class="text-center py-12"><i class="fa-solid fa-spinner fa-spin text-indigo-600 text-2xl"></i></div>`;
             try {
-                let res = await fetch(`${STEIN}/profil`);
-                let data = await res.json();
-                let p = data[0] || {};
-                area.innerHTML = `<div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6 max-w-xl"><h3 class="text-base md:text-lg font-black text-slate-800 mb-4">Profil Sekolah</h3><div class="space-y-3 text-sm"><p><strong>Nama Sekolah:</strong> ${p.nama_sekolah || '-'}</p><p><strong>NPSN:</strong> ${p.npsn || '-'}</p><p><strong>Alamat:</strong> ${p.alamat || '-'}</p></div></div>`;
-            } catch(e) { area.innerHTML = `<div class="p-4 text-rose-600">Gagal memuat profil.</div>`; }
+                let res = await fetch(`${STEIN}/profil`).catch(()=>[]);
+                let data = await res.json().catch(()=>[]);
+                let p = (data && data.length > 0) ? data[0] : {};
+                
+                let html = `
+                    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6 max-w-xl">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-base md:text-lg font-black text-slate-800">Profil Sekolah</h3>
+                            ${currentUser.role.toLowerCase() === 'admin' ? `<button onclick='openFormProfil(${JSON.stringify(p)})' class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition"><i class="fa-solid fa-pen mr-1"></i> Edit Profil</button>` : ''}
+                        </div>
+                        <div class="space-y-3 text-sm">
+                            <p><strong>Nama Sekolah:</strong> ${p.nama_sekolah || '-'}</p>
+                            <p><strong>NPSN:</strong> ${p.npsn || '-'}</p>
+                            <p><strong>Alamat:</strong> ${p.alamat || '-'}</p>
+                        </div>
+                    </div>
+                `;
+                area.innerHTML = html;
+            } catch(e) { 
+                area.innerHTML = `<div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6 max-w-xl">
+                    <h3 class="text-base md:text-lg font-black text-slate-800 mb-4">Profil Sekolah</h3>
+                    <p class="text-sm text-slate-500 mb-4">Belum ada data profil sekolah tersimpan.</p>
+                    ${currentUser.role.toLowerCase() === 'admin' ? `<button onclick='openFormProfil({})' class="bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-xl">Tambah Profil</button>` : ''}
+                </div>`; 
+            }
+        }
+
+        function openFormProfil(p = {}) {
+            let html = `
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-base md:text-lg font-black text-slate-800">Edit Profil Sekolah</h3>
+                    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <form onsubmit="saveProfil(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nama Sekolah</label>
+                        <input type="text" id="inp-profil-nama" required value="${p.nama_sekolah || ''}" class="w-full border rounded-xl px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">NPSN</label>
+                        <input type="text" id="inp-profil-npsn" required value="${p.npsn || ''}" class="w-full border rounded-xl px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Alamat</label>
+                        <textarea id="inp-profil-alamat" required class="w-full border rounded-xl px-3 py-2 text-sm" rows="3">${p.alamat || ''}</textarea>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-xl text-xs font-bold text-slate-600">Batal</button>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700">Simpan Profil</button>
+                    </div>
+                </form>
+            `;
+            openModal(html);
+        }
+
+        async function saveProfil(e) {
+            e.preventDefault();
+            let payload = {
+                nama_sekolah: document.getElementById('inp-profil-nama').value.trim(),
+                npsn: document.getElementById('inp-profil-npsn').value.trim(),
+                alamat: document.getElementById('inp-profil-alamat').value.trim()
+            };
+            try {
+                await fetch(`${STEIN}/profil`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify([payload])
+                });
+                closeModal();
+                loadProfilSekolah(document.querySelector('.menu-btn'));
+            } catch(err) { alert("Gagal menyimpan profil sekolah."); }
         }
 
         async function loadMapelGuru(el) {
@@ -926,7 +998,6 @@
                 guru: document.getElementById('inp-mapel-guru').value.trim(),
                 rombel: document.getElementById('inp-mapel-rombel').value
             };
-
             try {
                 if(oldMapel) {
                     await fetch(`${STEIN}/mapel`, {
@@ -958,7 +1029,6 @@
             } catch(e) { alert("Gagal menghapus mapel."); }
         }
 
-        // --- 6. ABSENSI QR & KONTROL KAMERA ---
         function loadAbsensiQR(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
@@ -1087,7 +1157,6 @@
             }
         }
 
-        // --- 7. BELUM ABSEN & MANUAL ---
         async function loadBelumAbsen(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
@@ -1162,7 +1231,6 @@
             } catch(e) { alert("Gagal menyimpan status absen manual."); }
         }
 
-        // --- 8. REKAP ABSENSI, FILTER, EXCEL, SHARE WA ---
         let globalRekapData = [];
         async function loadRekapAbsensi(el) {
             setMenuActive(el);
