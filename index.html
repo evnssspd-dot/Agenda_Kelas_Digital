@@ -357,9 +357,7 @@
             let schoolLogo = globalSchoolProfile.logo || 'https://via.placeholder.com/40';
             let schoolName = globalSchoolProfile.nama_sekolah || 'SMP ISLAM DARUSSALAM';
             let nomorInduk = s.nis || '-';
-
-            // Pola watermark berulang untuk latar belakang yang estetik
-            let watermarkPattern = Array(15).fill(`<span class="mx-2">${schoolName}</span>`).join(' - ');
+            let npsnSekolah = globalSchoolProfile.npsn || '20247282';
 
             let html = `
                 <div class="flex justify-between items-center mb-4">
@@ -367,48 +365,45 @@
                     <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="flex justify-center my-4">
-                    <!-- KARTU DESAIN BARU: 100% Terang, Putih Bersih, Estetik & Modern -->
-                    <div id="print-card-area" class="card-portrait rounded-2xl shadow-2xl flex flex-col justify-between items-center text-center relative overflow-hidden bg-gradient-to-b from-slate-50 via-white to-blue-50/50 border border-slate-300">
+                    <!-- KARTU PORTRAIT DENGAN TEMA WARNA SESUAI REFERENSI -->
+                    <div id="print-card-area" class="card-portrait rounded-2xl shadow-2xl flex flex-col justify-between relative overflow-hidden bg-white border border-slate-300" style="background: #ffffff !important;">
                         
-                        <!-- Watermark Background Berulang yang Elegan & Transparan -->
-                        <div class="absolute inset-0 flex flex-col justify-around opacity-[0.04] pointer-events-none select-none overflow-hidden py-2 z-0">
-                            <div class="whitespace-nowrap text-[9px] font-bold uppercase tracking-wider text-slate-900">${watermarkPattern}</div>
-                            <div class="whitespace-nowrap text-[9px] font-bold uppercase tracking-wider text-slate-900">${watermarkPattern}</div>
-                            <div class="whitespace-nowrap text-[9px] font-bold uppercase tracking-wider text-slate-900">${watermarkPattern}</div>
-                            <div class="whitespace-nowrap text-[9px] font-bold uppercase tracking-wider text-slate-900">${watermarkPattern}</div>
-                            <div class="whitespace-nowrap text-[9px] font-bold uppercase tracking-wider text-slate-900">${watermarkPattern}</div>
-                            <div class="whitespace-nowrap text-[9px] font-bold uppercase tracking-wider text-slate-900">${watermarkPattern}</div>
-                            <div class="whitespace-nowrap text-[9px] font-bold uppercase tracking-wider text-slate-900">${watermarkPattern}</div>
-                            <div class="whitespace-nowrap text-[9px] font-bold uppercase tracking-wider text-slate-900">${watermarkPattern}</div>
-                        </div>
-
-                        <!-- Header Atas: Rata Tengah Sempurna dengan Biru Elegan -->
-                        <div class="w-full bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 pt-3 pb-3 px-3 relative z-10 shadow-md flex flex-col items-center justify-center text-center rounded-t-2xl text-white">
-                            <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-md p-0.5 mb-1 border border-white/40 shrink-0">
+                        <!-- Header Atas (Ungu / Indigo dengan Logo & Badge Kuning) -->
+                        <div class="w-full pt-3 pb-3 px-3 relative z-10 flex items-center space-x-2.5 rounded-t-2xl shadow-sm" style="background: #6366f1 !important;">
+                            <div class="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-md p-0.5 shrink-0">
                                 <img src="${schoolLogo}" class="w-full h-full object-contain">
                             </div>
-                            <h1 class="text-[10px] font-black uppercase tracking-widest text-blue-100 leading-tight">Kartu Tanda Pelajar</h1>
-                            <h2 class="text-[10px] font-extrabold uppercase tracking-tight text-white truncate max-w-[210px] mt-0.5">${schoolName}</h2>
+                            <div class="text-left flex flex-col justify-center overflow-hidden leading-tight">
+                                <h2 class="text-[11px] font-black uppercase tracking-wide text-white truncate">${schoolName}</h2>
+                                <span class="inline-block mt-1 bg-amber-400 text-slate-950 text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md shadow-sm w-max">Kartu Tanda Siswa</span>
+                            </div>
                         </div>
 
-                        <!-- Garis Aksen Pembatas Estetik -->
-                        <div class="w-full h-[3px] bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 relative z-10"></div>
-
-                        <!-- Tengah: Foto Siswa, Nama Jelas Hitam Pekat, & NIS/NISN Satu Baris -->
-                        <div class="flex flex-col items-center my-auto w-full px-3 relative z-10">
-                            <!-- Foto Siswa -->
-                            <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-blue-600 shadow-md mb-2 bg-white flex items-center justify-center shrink-0">
+                        <!-- Bagian Tengah (Foto, Nama, ID, & QR Code) -->
+                        <div class="flex items-center justify-between px-3.5 my-auto w-full relative z-10 gap-3">
+                            <!-- Foto Siswa (Kiri) -->
+                            <div class="w-20 h-24 rounded-xl overflow-hidden border-2 border-indigo-500 shadow-md bg-slate-100 flex items-center justify-center shrink-0">
                                 <img src="${s.foto || 'https://via.placeholder.com/80'}" class="w-full h-full object-cover object-top">
                             </div>
-                            <!-- Nama Siswa: Hitam Pekat & Sangat Jelas -->
-                            <h3 class="text-sm font-black text-slate-900 uppercase tracking-wide truncate max-w-[200px] mb-1 leading-tight">${s.nama}</h3>
-                            <!-- NIS/NISN Satu Baris, Background Terang & Kontras -->
-                            <p class="text-[9px] text-slate-700 font-bold tracking-tight whitespace-nowrap bg-blue-50 px-3 py-1 rounded-full border border-blue-200 shadow-sm">NIS/NISN : <span class="text-blue-950 font-extrabold">${nomorInduk}</span></p>
+
+                            <!-- Identitas Siswa (Tengah) -->
+                            <div class="flex flex-col items-start justify-center text-left flex-grow overflow-hidden">
+                                <h3 class="text-xs font-black text-slate-900 uppercase tracking-tight truncate w-full mb-1">${s.nama}</h3>
+                                <div class="text-[9px] font-bold text-slate-600 mb-0.5 whitespace-nowrap">ID: <span class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-extrabold border border-slate-200">${nomorInduk}</span></div>
+                                <div class="text-[9px] font-bold text-slate-600 mb-2">Kelas: <span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-extrabold border border-indigo-200">${s.kelas || 'VII'}</span></div>
+                                <div class="bg-slate-900 text-amber-400 text-[8px] font-black px-2 py-0.5 rounded-full shadow-sm tracking-wider">TA 2026/2027 (Ganjil)</div>
+                            </div>
+
+                            <!-- QR Code (Kanan) -->
+                            <div class="flex flex-col items-center justify-center shrink-0">
+                                <div class="bg-white p-1 rounded-xl shadow-sm border border-slate-200" id="qrcode-container"></div>
+                            </div>
                         </div>
 
-                        <!-- Bawah: QR Code Proporsional -->
-                        <div class="w-full pb-3 pt-1 flex flex-col items-center relative z-10">
-                            <div class="bg-white p-1.5 rounded-xl shadow-sm border border-slate-200 inline-block" id="qrcode-container"></div>
+                        <!-- Footer Bawah (NPSN & Absensi QR System) -->
+                        <div class="w-full py-2 px-3.5 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-[8px] font-bold text-slate-600 relative z-10">
+                            <div>NPSN: <span class="text-indigo-700 font-extrabold">${npsnSekolah}</span></div>
+                            <div class="text-indigo-800 font-black tracking-wider uppercase">ABSENSI QR SYSTEM</div>
                         </div>
                     </div>
                 </div>
@@ -422,8 +417,8 @@
                 document.getElementById('qrcode-container').innerHTML = '';
                 new QRCode(document.getElementById('qrcode-container'), {
                     text: String(s.nis),
-                    width: 68,
-                    height: 68
+                    width: 58,
+                    height: 58
                 });
             }, 100);
         }
