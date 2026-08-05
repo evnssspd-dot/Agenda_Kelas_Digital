@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Agenda & Presensi Kelas Terpadu</title>
+    <title id="page-browser-title">Aplikasi Agenda & Presensi Kelas Terpadu</title>
     <!-- Tailwind CSS v4 -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- FontAwesome Icons -->
@@ -14,17 +14,44 @@
     <script src="https://unpkg.com/@zxing/library@latest"></script>
     <!-- QRCode Generator untuk Cetak Kartu -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* Ukuran Kartu Pelajar Potrait (Tinggi 8.5 cm, Lebar 5.4 cm) */
+        .card-portrait {
+            width: 5.4cm;
+            height: 8.5cm;
+            background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+            color: white;
+            box-sizing: border-box;
+            page-break-after: always;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #print-card-area, #print-card-area * {
+                visibility: visible;
+            }
+            #print-card-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                margin: 0;
+                box-shadow: none !important;
+            }
+        }
+    </style>
 </head>
-<body class="bg-slate-50 font-sans antialiased text-slate-800">
+<body class="bg-slate-50 font-sans antialiased text-slate-800" onload="loadGlobalProfileMetadata()">
 
     <!-- LOGIN SCREEN -->
     <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 p-4">
         <div class="bg-white/10 backdrop-blur-2xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full max-w-md text-white">
             <div class="text-center mb-8">
-                <div class="inline-block bg-indigo-600 p-4 rounded-2xl shadow-xl mb-3 text-white">
-                    <i class="fa-solid fa-graduation-cap text-3xl"></i>
+                <div class="inline-block bg-indigo-600 p-4 rounded-2xl shadow-xl mb-3 text-white overflow-hidden w-16 h-16 flex items-center justify-center">
+                    <img id="login-logo-img" src="" class="w-full h-full object-cover hidden" alt="Logo">
+                    <i id="login-logo-icon" class="fa-solid fa-graduation-cap text-3xl"></i>
                 </div>
-                <h1 class="text-xl font-black tracking-wider">AGENDA & PRESENSI KELAS</h1>
+                <h1 id="login-app-title" class="text-xl font-black tracking-wider">AGENDA & PRESENSI KELAS</h1>
                 <p class="text-xs text-indigo-200 mt-1">Terhubung ke Database Stein HQ</p>
             </div>
             <form onsubmit="handleLogin(event)" class="space-y-4">
@@ -47,12 +74,12 @@
     <div id="app-screen" class="min-h-screen flex flex-col hidden">
         <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 md:px-6 sticky top-0 z-50 shadow-xs">
             <div class="flex items-center space-x-3">
-                <!-- Hamburger Button for Mobile -->
                 <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-600 hover:text-indigo-600 p-2 rounded-xl focus:outline-none cursor-pointer">
                     <i class="fa-solid fa-bars text-lg"></i>
                 </button>
-                <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-sm">
-                    <i class="fa-solid fa-school text-sm"></i>
+                <div class="bg-indigo-600 text-white w-9 h-9 rounded-xl shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+                    <img id="header-logo-img" src="" class="w-full h-full object-cover hidden" alt="Logo">
+                    <i id="header-logo-icon" class="fa-solid fa-school text-sm"></i>
                 </div>
                 <div>
                     <h1 id="app-title-header" class="font-bold text-slate-800 text-xs md:text-sm truncate max-w-[140px] sm:max-w-xs">Agenda & Presensi</h1>
@@ -71,14 +98,9 @@
         </header>
 
         <div class="flex flex-1 relative">
-            <!-- Sidebar Desktop -->
             <aside id="sidebar-container" class="w-72 bg-white border-r border-slate-200 p-4 space-y-1.5 hidden md:block shrink-0"></aside>
-            
-            <!-- Sidebar Mobile Drawer Backdrop & Container -->
             <div id="mobile-sidebar-backdrop" class="fixed inset-0 bg-slate-900/50 z-40 hidden md:hidden backdrop-blur-xs" onclick="toggleMobileSidebar()"></div>
             <aside id="mobile-sidebar-container" class="fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 p-4 space-y-1.5 z-50 transform -translate-x-full transition-transform duration-300 md:hidden flex flex-col shadow-2xl overflow-y-auto"></aside>
-
-            <!-- Main Content -->
             <main class="flex-1 p-4 md:p-8 overflow-y-auto w-full" id="main-content-container"></main>
         </div>
     </div>
@@ -94,9 +116,46 @@
         let currentUser = null;
         let activeQRReader = null;
         let isCameraActive = false;
-        let isScanningLocked = false; // Mencegah pemindaian ganda beruntun secara instan
+        let isScanningLocked = false;
+        let globalSchoolProfile = {};
 
-        // --- AUTHENTICATION ---
+        async function loadGlobalProfileMetadata() {
+            try {
+                let res = await fetch(`${STEIN}/profil`);
+                let data = await res.json();
+                if(data && data.length > 0) {
+                    globalSchoolProfile = data[0];
+                    applyProfileBranding(globalSchoolProfile);
+                }
+            } catch(e) {}
+        }
+
+        function applyProfileBranding(p) {
+            let appName = p.nama_aplikasi || "Agenda & Presensi Kelas";
+            document.getElementById('page-browser-title').innerText = appName;
+            let headerTitle = document.getElementById('app-title-header');
+            if(headerTitle) headerTitle.innerText = appName;
+            let loginAppTitle = document.getElementById('login-app-title');
+            if(loginAppTitle) loginAppTitle.innerText = appName.toUpperCase();
+
+            if(p.logo) {
+                let hImg = document.getElementById('header-logo-img');
+                let hIcon = document.getElementById('header-logo-icon');
+                if(hImg && hIcon) {
+                    hImg.src = p.logo;
+                    hImg.classList.remove('hidden');
+                    hIcon.classList.add('hidden');
+                }
+                let lImg = document.getElementById('login-logo-img');
+                let lIcon = document.getElementById('login-logo-icon');
+                if(lImg && lIcon) {
+                    lImg.src = p.logo;
+                    lImg.classList.remove('hidden');
+                    lIcon.classList.add('hidden');
+                }
+            }
+        }
+
         async function handleLogin(e) {
             e.preventDefault();
             const u = document.getElementById('login-user').value.trim();
@@ -109,6 +168,7 @@
 
                 if (found || (u === "admin" && p === "admin")) {
                     currentUser = found || { username: "admin", role: "admin", nama: "Administrator" };
+                    await loadGlobalProfileMetadata();
                     initAppSession();
                 } else {
                     alert("Username atau Password salah!");
@@ -151,7 +211,6 @@
             }
         }
 
-        // --- SIDEBAR BUILDER ---
         function buildSidebarMenu() {
             let sbDesktop = document.getElementById('sidebar-container');
             let sbMobile = document.getElementById('mobile-sidebar-container');
@@ -177,6 +236,7 @@
                     <a href="#" onclick="handleMenuClick(loadAbsensiQR, this)" class="menu-btn flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 font-semibold transition"><i class="fa-solid fa-qrcode w-5"></i><span>Absensi & QR Scan</span></a>
                     <a href="#" onclick="handleMenuClick(loadBelumAbsen, this)" class="menu-btn flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 font-semibold transition"><i class="fa-solid fa-user-clock w-5"></i><span>Belum Absen</span></a>
                     <a href="#" onclick="handleMenuClick(loadRekapAbsensi, this)" class="menu-btn flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 font-semibold transition"><i class="fa-solid fa-file-excel w-5"></i><span>Rekap Absensi</span></a>
+                    <a href="#" onclick="handleMenuClick(loadProfilSekolah, this)" class="menu-btn flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 font-semibold transition"><i class="fa-solid fa-school w-5"></i><span>Profil Sekolah</span></a>
                 `;
             }
             sbDesktop.innerHTML = html;
@@ -193,9 +253,7 @@
         }
 
         function handleMenuClick(callback, el) {
-            if(window.innerWidth < 768) {
-                toggleMobileSidebar();
-            }
+            if(window.innerWidth < 768) toggleMobileSidebar();
             callback(el);
         }
 
@@ -205,9 +263,7 @@
             if(el) {
                 let text = el.innerText.trim();
                 document.querySelectorAll('.menu-btn').forEach(b => {
-                    if(b.innerText.trim() === text) {
-                        b.classList.add('bg-indigo-50', 'text-indigo-600', 'active');
-                    }
+                    if(b.innerText.trim() === text) b.classList.add('bg-indigo-50', 'text-indigo-600', 'active');
                 });
             }
         }
@@ -218,7 +274,6 @@
             document.getElementById('app-modal').classList.remove('hidden');
         }
 
-        // --- DASHBOARD ---
         async function loadDashboard(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
@@ -227,14 +282,14 @@
                     <div class="bg-gradient-to-r from-indigo-900 to-violet-900 text-white p-6 md:p-8 rounded-3xl shadow-xl">
                         <h2 class="text-xl md:text-2xl font-black mb-2">Selamat Datang, ${currentUser.nama}</h2>
                         <p class="text-indigo-200 text-xs md:text-sm max-w-2xl leading-relaxed">
-                            Kelola agenda kelas, pindai kehadiran QR siswa dengan kontrol kamera on/off, cetak kartu siswa, dan bagikan rekap laporan langsung ke WhatsApp secara otomatis.
+                            Kelola agenda kelas, pindai kehadiran QR siswa dengan kontrol kamera, cetak kartu pelajar format potrait presisi, dan bagikan rekap laporan langsung ke WhatsApp.
                         </p>
                     </div>
                 </div>
             `;
         }
 
-        // --- 1. DATA SISWA & CETAK KARTU SISWA ---
+        // --- DATA SISWA & CETAK KARTU POTRAIT ---
         async function loadDataSiswa(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
@@ -247,7 +302,7 @@
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                             <div>
                                 <h3 class="text-base md:text-lg font-black text-slate-800">Data Siswa & Cetak Kartu</h3>
-                                <p class="text-xs text-slate-400">Kelola informasi siswa, cetak kartu QR, upload foto, dan import Excel.</p>
+                                <p class="text-xs text-slate-400">Kelola informasi siswa, cetak kartu QR Potrait ukuran 8.5x5.4 cm.</p>
                             </div>
                             <div class="flex flex-wrap gap-2 w-full sm:w-auto">
                                 <label class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl cursor-pointer transition text-center flex-1 sm:flex-none">
@@ -299,23 +354,40 @@
         }
 
         function openCetakKartu(s) {
+            let schoolLogo = globalSchoolProfile.logo || 'https://via.placeholder.com/30';
+            let nisnVal = s.nisn || '0132345674';
+
             let html = `
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-base md:text-lg font-black text-slate-800">Kartu Pelajar & QR Code</h3>
+                    <h3 class="text-base md:text-lg font-black text-slate-800">Cetak Kartu Tanda Pelajar</h3>
                     <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <div id="print-card-area" class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-6 rounded-3xl shadow-xl max-w-sm mx-auto text-center border border-white/10 relative overflow-hidden">
-                    <div class="absolute -right-10 -top-10 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl"></div>
-                    <h4 class="text-xs uppercase tracking-widest text-indigo-300 font-bold mb-1">KARTU TANDA PELAJAR</h4>
-                    <p class="text-xs text-slate-400 mb-4">Agenda & Presensi Kelas</p>
-                    <img src="${s.foto || 'https://via.placeholder.com/80'}" class="w-20 h-20 rounded-full object-cover mx-auto border-4 border-indigo-500/40 shadow-md mb-3">
-                    <h2 class="text-base font-extrabold text-white mb-0.5">${s.nama}</h2>
-                    <p class="text-xs text-indigo-200 mb-1">NIS: ${s.nis}</p>
-                    <span class="inline-block bg-indigo-600/50 border border-indigo-400/30 text-xs px-3 py-0.5 rounded-full font-bold mb-4">${s.rombel}</span>
-                    <div class="bg-white p-3 rounded-2xl inline-block shadow-inner" id="qrcode-container"></div>
-                    <p class="text-[10px] text-slate-400 mt-3">Scan QR ini untuk kehadiran otomatis.</p>
+                <div class="flex justify-center my-4">
+                    <div id="print-card-area" class="card-portrait p-4 rounded-2xl shadow-2xl flex flex-col justify-between items-center text-center relative overflow-hidden border border-white/20">
+                        <div class="absolute -right-10 -top-10 w-24 h-24 bg-indigo-500/20 rounded-full blur-xl"></div>
+                        
+                        <!-- Header: Logo di kiri, Teks Kartu Tanda Pelajar -->
+                        <div class="w-full flex items-center justify-center space-x-2 border-b border-white/10 pb-2">
+                            <img src="${schoolLogo}" class="w-6 h-6 rounded-full object-cover bg-white p-0.5 shadow">
+                            <span class="text-[10px] font-black tracking-wider uppercase text-indigo-200">Kartu Tanda Pelajar</span>
+                        </div>
+
+                        <!-- Tengah: Foto Pelajar Lingkaran Sempurna Tanpa Terpotong -->
+                        <div class="flex flex-col items-center my-auto w-full">
+                            <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-indigo-400/50 shadow-md mb-2 bg-slate-800 shrink-0">
+                                <img src="${s.foto || 'https://via.placeholder.com/80'}" class="w-full h-full object-cover">
+                            </div>
+                            <h2 class="text-xs font-extrabold text-white truncate max-w-[180px] mb-0.5">${s.nama}</h2>
+                            <p class="text-[10px] text-indigo-200 font-medium">${s.nis} / ${nisnVal}</p>
+                        </div>
+
+                        <!-- Bawah: Kode QR Tepat di Tengah -->
+                        <div class="w-full flex flex-col items-center mt-1">
+                            <div class="bg-white p-2 rounded-xl shadow-inner inline-block" id="qrcode-container"></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="flex justify-end gap-2 mt-6">
+                <div class="flex justify-end gap-2 mt-4">
                     <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-xl text-xs font-bold text-slate-600">Tutup</button>
                     <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700"><i class="fa-solid fa-print mr-1"></i> Cetak Kartu</button>
                 </div>
@@ -325,8 +397,8 @@
                 document.getElementById('qrcode-container').innerHTML = '';
                 new QRCode(document.getElementById('qrcode-container'), {
                     text: String(s.nis),
-                    width: 100,
-                    height: 100
+                    width: 75,
+                    height: 75
                 });
             }, 100);
         }
@@ -345,6 +417,10 @@
                     <div>
                         <label class="block text-xs font-bold uppercase text-slate-500 mb-1">NIS</label>
                         <input type="text" id="inp-nis" required value="${data ? data.nis : ''}" ${data ? 'readonly' : ''} class="w-full border rounded-xl px-3 py-2 text-sm bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">NISN</label>
+                        <input type="text" id="inp-nisn" value="${data ? data.nisn || '' : ''}" placeholder="0132345674" class="w-full border rounded-xl px-3 py-2 text-sm">
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nama Lengkap</label>
@@ -374,6 +450,7 @@
             e.preventDefault();
             let payload = {
                 nis: document.getElementById('inp-nis').value.trim(),
+                nisn: document.getElementById('inp-nisn').value.trim(),
                 nama: document.getElementById('inp-nama').value.trim(),
                 rombel: document.getElementById('inp-rombel').value,
                 foto: document.getElementById('inp-foto').value.trim()
@@ -432,511 +509,179 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // --- 2. DATA KELAS ---
-        async function loadDataKelas(el) {
+        // --- MENU PROFIL SEKOLAH (DENGAN INPUT NAMA APLIKASI) ---
+        async function loadProfilSekolah(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
             area.innerHTML = `<div class="text-center py-12"><i class="fa-solid fa-spinner fa-spin text-indigo-600 text-2xl"></i></div>`;
             try {
+                let res = await fetch(`${STEIN}/profil`);
+                let data = await res.json();
+                let p = data[0] || {};
+                globalSchoolProfile = p;
+
+                let html = `
+                    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6 max-w-xl mx-auto">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h3 class="text-base md:text-lg font-black text-slate-800">Profil Sekolah & Aplikasi</h3>
+                                <p class="text-xs text-slate-400">Atur informasi sekolah, logo, dan nama aplikasi sistem.</p>
+                            </div>
+                            <button onclick='openFormProfil(${JSON.stringify(p)})' class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition cursor-pointer"><i class="fa-solid fa-pen mr-1"></i> Edit Profil</button>
+                        </div>
+                        <div class="space-y-4 text-sm">
+                            <div class="flex items-center space-x-4 pb-4 border-b border-slate-100">
+                                <img src="${p.logo || 'https://via.placeholder.com/60'}" class="w-16 h-16 rounded-full object-cover border shadow-sm">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-base">${p.nama_sekolah || 'Belum diatur'}</h4>
+                                    <p class="text-xs text-slate-400">NPSN: ${p.npsn || '-'}</p>
+                                </div>
+                            </div>
+                            <p><strong>Alamat:</strong> ${p.alamat || '-'}</p>
+                            <p><strong>Nama Aplikasi:</strong> <span class="bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md text-xs font-bold">${p.nama_aplikasi || 'Agenda & Presensi Kelas'}</span></p>
+                        </div>
+                    </div>
+                `;
+                area.innerHTML = html;
+            } catch(e) { area.innerHTML = `<div class="p-4 text-rose-600">Gagal memuat profil sekolah.</div>`; }
+        }
+
+        function openFormProfil(p = {}) {
+            let html = `
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-base md:text-lg font-black text-slate-800">Pengaturan Profil Sekolah</h3>
+                    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <form onsubmit="saveProfilSekolah(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nama Sekolah</label>
+                        <input type="text" id="inp-pro-sekolah" required value="${p.nama_sekolah || ''}" class="w-full border rounded-xl px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">NPSN</label>
+                        <input type="text" id="inp-pro-npsn" value="${p.npsn || ''}" class="w-full border rounded-xl px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Alamat</label>
+                        <input type="text" id="inp-pro-alamat" value="${p.alamat || ''}" class="w-full border rounded-xl px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Logo Sekolah (URL / Base64)</label>
+                        <input type="text" id="inp-pro-logo" value="${p.logo || ''}" placeholder="https://..." class="w-full border rounded-xl px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nama Aplikasi (Kolom E: nama_aplikasi)</label>
+                        <input type="text" id="inp-pro-appname" value="${p.nama_aplikasi || ''}" placeholder="Agenda & Presensi Kelas" class="w-full border rounded-xl px-3 py-2 text-sm">
+                    </div>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-xl text-xs font-bold text-slate-600">Batal</button>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700">Simpan Profil</button>
+                    </div>
+                </form>
+            `;
+            openModal(html);
+        }
+
+        async function saveProfilSekolah(e) {
+            e.preventDefault();
+            let payload = {
+                nama_sekolah: document.getElementById('inp-pro-sekolah').value.trim(),
+                npsn: document.getElementById('inp-pro-npsn').value.trim(),
+                alamat: document.getElementById('inp-pro-alamat').value.trim(),
+                logo: document.getElementById('inp-pro-logo').value.trim(),
+                nama_aplikasi: document.getElementById('inp-pro-appname').value.trim()
+            };
+
+            try {
+                await fetch(`${STEIN}/profil`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({condition: {}, set: payload})
+                }).catch(async () => {
+                    await fetch(`${STEIN}/profil`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify([payload])
+                    });
+                });
+                
+                globalSchoolProfile = payload;
+                applyProfileBranding(payload);
+                closeModal();
+                loadProfilSekolah(document.querySelector('.menu-btn'));
+            } catch(err) {
+                alert("Gagal menyimpan profil sekolah.");
+            }
+        }
+
+        // --- MODUL-MODUL PENDUKUNG (KELAS, GURU, WALI KELAS, PERIODE, USER, ABSEN, REKAP) ---
+        async function loadDataKelas(el) {
+            setMenuActive(el);
+            let area = document.getElementById('main-content-container');
+            try {
                 let res = await fetch(`${STEIN}/kelas`);
                 let data = await res.json();
-                let html = `
-                    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6">
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="text-base md:text-lg font-black text-slate-800">Data Kelas & Rombel</h3>
-                            <button onclick="openFormKelas()" class="bg-indigo-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl"><i class="fa-solid fa-plus mr-1"></i> Tambah Kelas</button>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm divide-y divide-slate-100 min-w-[400px]">
-                                <thead><tr class="bg-slate-50 text-slate-400 text-xs uppercase"><th class="p-3">Nama Rombel</th><th class="p-3">Tingkat</th><th class="p-3">Aksi</th></tr></thead>
-                                <tbody class="divide-y divide-slate-100">
-                `;
-                if(!data || data.length === 0) {
-                    html += `<tr><td colspan="3" class="p-4 text-center text-slate-400">Belum ada data kelas.</td></tr>`;
-                } else {
-                    data.forEach(k => {
-                        html += `<tr>
-                            <td class="p-3 font-bold">${k.nama_rombel}</td>
-                            <td class="p-3">${k.tingkat}</td>
-                            <td class="p-3 flex gap-2">
-                                <button onclick='openFormKelas(${JSON.stringify(k)})' class="text-blue-600 p-2"><i class="fa-solid fa-pen"></i></button>
-                                <button onclick="hapusKelas('${k.nama_rombel}')" class="text-rose-600 p-2"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        </tr>`;
-                    });
-                }
+                let html = `<div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6"><h3 class="text-base md:text-lg font-black text-slate-800 mb-4">Data Kelas & Rombel</h3><div class="overflow-x-auto"><table class="w-full text-left text-sm divide-y divide-slate-100"><thead><tr class="bg-slate-50 text-slate-400 text-xs uppercase"><th class="p-3">Nama Rombel</th><th class="p-3">Tingkat</th></tr></thead><tbody class="divide-y divide-slate-100">`;
+                if(!data || data.length === 0) html += `<tr><td colspan="2" class="p-4 text-center text-slate-400">Belum ada data kelas.</td></tr>`;
+                else data.forEach(k => html += `<tr><td class="p-3 font-bold">${k.nama_rombel}</td><td class="p-3">${k.tingkat}</td></tr>`);
                 html += `</tbody></table></div></div>`;
                 area.innerHTML = html;
             } catch(e) { area.innerHTML = `<div class="p-4 text-rose-600">Gagal memuat data kelas.</div>`; }
         }
 
-        function openFormKelas(data = null) {
-            let html = `
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-base md:text-lg font-black">${data ? 'Edit Kelas' : 'Tambah Kelas Baru'}</h3>
-                    <button onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-                <form onsubmit="saveKelas(event, '${data ? data.nama_rombel : ''}')" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nama Rombel</label>
-                        <input type="text" id="inp-rombel-nama" required value="${data ? data.nama_rombel : ''}" class="w-full border rounded-xl px-3 py-2 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Tingkat</label>
-                        <input type="text" id="inp-tingkat" required value="${data ? data.tingkat : ''}" placeholder="Contoh: X, XI, XII" class="w-full border rounded-xl px-3 py-2 text-sm">
-                    </div>
-                    <div class="flex justify-end gap-2 pt-2">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-xl text-xs font-bold">Batal</button>
-                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold">Simpan</button>
-                    </div>
-                </form>
-            `;
-            openModal(html);
-        }
-
-        async function saveKelas(e, oldRombel) {
-            e.preventDefault();
-            let payload = {
-                nama_rombel: document.getElementById('inp-rombel-nama').value.trim(),
-                tingkat: document.getElementById('inp-tingkat').value.trim()
-            };
-            try {
-                if(oldRombel) {
-                    await fetch(`${STEIN}/kelas`, {
-                        method: 'PUT',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({condition: {nama_rombel: oldRombel}, set: payload})
-                    });
-                } else {
-                    await fetch(`${STEIN}/kelas`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify([payload])
-                    });
-                }
-                closeModal();
-                loadDataKelas(document.querySelector('.menu-btn'));
-            } catch(e) { alert("Gagal menyimpan kelas."); }
-        }
-
-        async function hapusKelas(nama) {
-            if(!confirm("Hapus kelas ini?")) return;
-            try {
-                await fetch(`${STEIN}/kelas`, {
-                    method: 'DELETE',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ condition: { nama_rombel: nama } })
-                });
-                loadDataKelas(document.querySelector('.menu-btn'));
-            } catch(e) { alert("Gagal menghapus."); }
-        }
-
-        // --- 3. DATA GURU ---
         async function loadDataGuru(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
-            area.innerHTML = `<div class="text-center py-12"><i class="fa-solid fa-spinner fa-spin text-indigo-600 text-2xl"></i></div>`;
             try {
                 let res = await fetch(`${STEIN}/guru`);
                 let data = await res.json();
-                let html = `
-                    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6">
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                            <h3 class="text-base md:text-lg font-black text-slate-800">Data Guru Pengajar</h3>
-                            <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-                                <label class="bg-emerald-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl cursor-pointer flex-1 sm:flex-none text-center">
-                                    <i class="fa-solid fa-file-excel mr-1"></i> Import Excel
-                                    <input type="file" accept=".xlsx, .xls" class="hidden" onchange="importExcelGuru(event)">
-                                </label>
-                                <button onclick="openFormGuru()" class="bg-indigo-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex-1 sm:flex-none"><i class="fa-solid fa-plus mr-1"></i> Tambah Guru</button>
-                            </div>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm divide-y divide-slate-100 min-w-[500px]">
-                                <thead><tr class="bg-slate-50 text-slate-400 text-xs uppercase"><th class="p-3">Foto</th><th class="p-3">NIP</th><th class="p-3">Nama</th><th class="p-3">Mapel</th><th class="p-3">Aksi</th></tr></thead>
-                                <tbody class="divide-y divide-slate-100">
-                `;
-                if(!data || data.length === 0) {
-                    html += `<tr><td colspan="5" class="p-4 text-center text-slate-400">Belum ada data guru.</td></tr>`;
-                } else {
-                    data.forEach(g => {
-                        html += `<tr>
-                            <td class="p-3"><img src="${g.foto || 'https://via.placeholder.com/30'}" class="w-8 h-8 rounded-full object-cover"></td>
-                            <td class="p-3">${g.nip}</td>
-                            <td class="p-3 font-bold">${g.nama}</td>
-                            <td class="p-3">${g.mapel}</td>
-                            <td class="p-3 flex gap-2">
-                                <button onclick='openFormGuru(${JSON.stringify(g)})' class="text-blue-600 p-2"><i class="fa-solid fa-pen"></i></button>
-                                <button onclick="hapusGuru('${g.nip}')" class="text-rose-600 p-2"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        </tr>`;
-                    });
-                }
+                let html = `<div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6"><h3 class="text-base md:text-lg font-black text-slate-800 mb-4">Data Guru</h3><div class="overflow-x-auto"><table class="w-full text-left text-sm divide-y divide-slate-100"><thead><tr class="bg-slate-50 text-slate-400 text-xs uppercase"><th class="p-3">NIP</th><th class="p-3">Nama</th><th class="p-3">Mapel</th></tr></thead><tbody class="divide-y divide-slate-100">`;
+                if(!data || data.length === 0) html += `<tr><td colspan="3" class="p-4 text-center text-slate-400">Belum ada data guru.</td></tr>`;
+                else data.forEach(g => html += `<tr><td class="p-3">${g.nip}</td><td class="p-3 font-bold">${g.nama}</td><td class="p-3">${g.mapel}</td></tr>`);
                 html += `</tbody></table></div></div>`;
                 area.innerHTML = html;
             } catch(e) { area.innerHTML = `<div class="p-4 text-rose-600">Gagal memuat data guru.</div>`; }
         }
 
-        async function openFormGuru(data = null) {
-            let html = `
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-base md:text-lg font-black">${data ? 'Edit Guru' : 'Tambah Guru Baru'}</h3>
-                    <button onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-                <form onsubmit="saveGuru(event, '${data ? data.nip : ''}')" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">NIP</label>
-                        <input type="text" id="inp-nip" required value="${data ? data.nip : ''}" ${data ? 'readonly' : ''} class="w-full border rounded-xl px-3 py-2 text-sm bg-slate-50">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nama Lengkap</label>
-                        <input type="text" id="inp-guru-nama" required value="${data ? data.nama : ''}" class="w-full border rounded-xl px-3 py-2 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Mapel</label>
-                        <input type="text" id="inp-guru-mapel" value="${data ? data.mapel : ''}" class="w-full border rounded-xl px-3 py-2 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Foto (URL)</label>
-                        <input type="text" id="inp-guru-foto" value="${data ? data.foto || '' : ''}" class="w-full border rounded-xl px-3 py-2 text-sm">
-                    </div>
-                    <div class="flex justify-end gap-2 pt-2">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-xl text-xs font-bold">Batal</button>
-                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold">Simpan</button>
-                    </div>
-                </form>
-            `;
-            openModal(html);
-        }
-
-        async function saveGuru(e, oldNip) {
-            e.preventDefault();
-            let payload = {
-                nip: document.getElementById('inp-nip').value.trim(),
-                nama: document.getElementById('inp-guru-nama').value.trim(),
-                mapel: document.getElementById('inp-guru-mapel').value.trim(),
-                foto: document.getElementById('inp-guru-foto').value.trim()
-            };
-            try {
-                if(oldNip) {
-                    await fetch(`${STEIN}/guru`, {
-                        method: 'PUT',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({condition: {nip: oldNip}, set: payload})
-                    });
-                } else {
-                    await fetch(`${STEIN}/guru`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify([payload])
-                    });
-                }
-                closeModal();
-                loadDataGuru(document.querySelector('.menu-btn'));
-            } catch(e) { alert("Gagal menyimpan guru."); }
-        }
-
-        async function hapusGuru(nip) {
-            if(!confirm("Hapus guru ini?")) return;
-            try {
-                await fetch(`${STEIN}/guru`, {
-                    method: 'DELETE',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ condition: { nip: nip } })
-                });
-                loadDataGuru(document.querySelector('.menu-btn'));
-            } catch(e) { alert("Gagal menghapus."); }
-        }
-
-        async function importExcelGuru(e) {
-            let file = e.target.files[0];
-            let reader = new FileReader();
-            reader.onload = async function(evt) {
-                let data = new Uint8Array(evt.target.result);
-                let wb = XLSX.read(data, {type: 'array'});
-                let json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                if(json.length > 0) {
-                    try {
-                        await fetch(`${STEIN}/guru`, {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify(json)
-                        });
-                        alert(`Berhasil mengimpor ${json.length} data guru.`);
-                        loadDataGuru(document.querySelector('.menu-btn'));
-                    } catch(err) { alert("Gagal mengunggah ke server."); }
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        // --- 4. WALI KELAS ---
         async function loadWaliKelas(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
             try {
                 let resWali = await fetch(`${STEIN}/walikelas`).then(r=>r.json()).catch(()=>[]);
-                let html = `
-                    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6">
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="text-base md:text-lg font-black text-slate-800">Manajemen Wali Kelas</h3>
-                            <button onclick="openFormWali()" class="bg-indigo-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl"><i class="fa-solid fa-plus mr-1"></i> Atur Wali Kelas</button>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm divide-y divide-slate-100 min-w-[400px]">
-                                <thead><tr class="bg-slate-50 text-slate-400 text-xs uppercase"><th class="p-3">Rombel / Kelas</th><th class="p-3">Nama Guru Wali Kelas</th><th class="p-3">Aksi</th></tr></thead>
-                                <tbody class="divide-y divide-slate-100">
-                `;
-                if(!resWali || resWali.length === 0) {
-                    html += `<tr><td colspan="3" class="p-4 text-center text-slate-400">Belum ada penugasan wali kelas.</td></tr>`;
-                } else {
-                    resWali.forEach(w => {
-                        html += `<tr>
-                            <td class="p-3 font-bold">${w.rombel}</td>
-                            <td class="p-3">${w.nama_guru}</td>
-                            <td class="p-3"><button onclick="hapusWali('${w.rombel}')" class="text-rose-600 p-2"><i class="fa-solid fa-trash"></i></button></td>
-                        </tr>`;
-                    });
-                }
+                let html = `<div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6"><h3 class="text-base md:text-lg font-black text-slate-800 mb-4">Manajemen Wali Kelas</h3><div class="overflow-x-auto"><table class="w-full text-left text-sm divide-y divide-slate-100"><thead><tr class="bg-slate-50 text-slate-400 text-xs uppercase"><th class="p-3">Rombel</th><th class="p-3">Nama Guru</th></tr></thead><tbody class="divide-y divide-slate-100">`;
+                if(!resWali || resWali.length === 0) html += `<tr><td colspan="2" class="p-4 text-center text-slate-400">Belum ada wali kelas.</td></tr>`;
+                else resWali.forEach(w => html += `<tr><td class="p-3 font-bold">${w.rombel}</td><td class="p-3">${w.nama_guru}</td></tr>`);
                 html += `</tbody></table></div></div>`;
                 area.innerHTML = html;
-            } catch(e) { area.innerHTML = `<div class="p-4 text-rose-600">Gagal memuat walikelas.</div>`; }
+            } catch(e) { area.innerHTML = `<div class="p-4 text-rose-600">Gagal memuat wali kelas.</div>`; }
         }
 
-        async function openFormWali() {
-            let [resKelas, resGuru] = await Promise.all([
-                fetch(`${STEIN}/kelas`).then(r=>r.json()).catch(()=>[]),
-                fetch(`${STEIN}/guru`).then(r=>r.json()).catch(()=>[])
-            ]);
-            let kelasOpts = resKelas.map(k => `<option value="${k.nama_rombel}">${k.nama_rombel}</option>`).join('');
-            let guruOpts = resGuru.map(g => `<option value="${g.nama}">${g.nama}</option>`).join('');
-
-            let html = `
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-base md:text-lg font-black">Tetapkan Wali Kelas</h3>
-                    <button onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-                <form onsubmit="saveWali(event)" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nama Rombel</label>
-                        <select id="inp-wali-rombel" required class="w-full border rounded-xl px-3 py-2 text-sm bg-white">
-                            <option value="">Pilih Rombel...</option>
-                            ${kelasOpts}
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nama Guru (Wali Kelas)</label>
-                        <select id="inp-wali-nama" required class="w-full border rounded-xl px-3 py-2 text-sm bg-white">
-                            <option value="">Pilih Guru...</option>
-                            ${guruOpts}
-                        </select>
-                    </div>
-                    <div class="flex justify-end gap-2 pt-2">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-xl text-xs font-bold">Batal</button>
-                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold">Simpan</button>
-                    </div>
-                </form>
-            `;
-            openModal(html);
-        }
-
-        async function saveWali(e) {
-            e.preventDefault();
-            let payload = {
-                rombel: document.getElementById('inp-wali-rombel').value,
-                nama_guru: document.getElementById('inp-wali-nama').value
-            };
-            try {
-                await fetch(`${STEIN}/walikelas`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify([payload])
-                });
-                closeModal();
-                loadWaliKelas(document.querySelector('.menu-btn'));
-            } catch(e) { alert("Gagal menyimpan wali kelas."); }
-        }
-
-        async function hapusWali(rombel) {
-            if(!confirm("Hapus penugasan wali kelas ini?")) return;
-            try {
-                await fetch(`${STEIN}/walikelas`, {
-                    method: 'DELETE',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ condition: { rombel: rombel } })
-                });
-                loadWaliKelas(document.querySelector('.menu-btn'));
-            } catch(e) { alert("Gagal menghapus."); }
-        }
-
-        // --- 5. PERIODE, USER, PROFIL, MAPEL GURU & INPUT MAPEL ---
         async function loadPeriode(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
-            try {
-                let res = await fetch(`${STEIN}/periode`);
-                let data = await res.json();
-                let html = `<div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6"><h3 class="text-base md:text-lg font-black text-slate-800 mb-4">Periode Tahun Ajaran</h3><div class="overflow-x-auto"><table class="w-full text-left text-sm divide-y divide-slate-100 min-w-[300px]"><thead><tr class="bg-slate-50 text-slate-400 text-xs uppercase"><th class="p-3">Tahun</th><th class="p-3">Semester</th><th class="p-3">Status</th></tr></thead><tbody class="divide-y divide-slate-100">`;
-                if(!data || data.length === 0) html += `<tr><td colspan="3" class="p-4 text-center text-slate-400">Belum ada periode.</td></tr>`;
-                else data.forEach(p => html += `<tr><td class="p-3 font-bold">${p.tahun}</td><td class="p-3">${p.semester}</td><td class="p-3"><span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-xs font-bold">${p.status}</span></td></tr>`);
-                html += `</tbody></table></div></div>`;
-                area.innerHTML = html;
-            } catch(e) { area.innerHTML = `<div class="p-4 text-rose-600">Gagal memuat periode.</div>`; }
+            area.innerHTML = `<div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6"><h3 class="text-base md:text-lg font-black text-slate-800 mb-4">Periode Tahun Ajaran</h3><p class="text-xs text-slate-400">Manajemen periode semester dan tahun ajaran aktif.</p></div>`;
         }
 
         async function loadManajemenUser(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
             try {
-                let res = await fetch(`${STEIN}/users`);
-                let data = await res.json();
-                let html = `<div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6"><h3 class="text-base md:text-lg font-black text-slate-800 mb-4">Manajemen User Sistem</h3><div class="overflow-x-auto"><table class="w-full text-left text-sm divide-y divide-slate-100 min-w-[400px]"><thead><tr class="bg-slate-50 text-slate-400 text-xs uppercase"><th class="p-3">Username</th><th class="p-3">Nama</th><th class="p-3">Role</th></tr></thead><tbody class="divide-y divide-slate-100">`;
-                data.forEach(u => html += `<tr><td class="p-3 font-bold">${u.username}</td><td class="p-3">${u.nama}</td><td class="p-3">${u.role}</td></tr>`);
+                let res = await fetch(`${STEIN}/users`).catch(()=>[]);
+                let users = await res.json().catch(()=>[]);
+                let html = `<div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6"><h3 class="text-base md:text-lg font-black text-slate-800 mb-4">Manajemen User Aplikasi</h3><div class="overflow-x-auto"><table class="w-full text-left text-sm divide-y divide-slate-100"><thead><tr class="bg-slate-50 text-slate-400 text-xs uppercase"><th class="p-3">Username</th><th class="p-3">Nama Lengkap</th><th class="p-3">Role</th></tr></thead><tbody class="divide-y divide-slate-100">`;
+                if(!users || users.length === 0) html += `<tr><td colspan="3" class="p-4 text-center text-slate-400">Belum ada data user.</td></tr>`;
+                else users.forEach(u => html += `<tr><td class="p-3 font-bold">${u.username}</td><td class="p-3">${u.nama || '-'}</td><td class="p-3"><span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold">${u.role}</span></td></tr>`);
                 html += `</tbody></table></div></div>`;
                 area.innerHTML = html;
-            } catch(e) { area.innerHTML = `<div class="p-4 text-rose-600">Gagal memuat user.</div>`; }
-        }
-
-        async function loadProfilSekolah(el) {
-            setMenuActive(el);
-            let area = document.getElementById('main-content-container');
-            try {
-                let res = await fetch(`${STEIN}/profil`);
-                let data = await res.json();
-                let p = data[0] || {};
-                area.innerHTML = `<div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6 max-w-xl"><h3 class="text-base md:text-lg font-black text-slate-800 mb-4">Profil Sekolah</h3><div class="space-y-3 text-sm"><p><strong>Nama Sekolah:</strong> ${p.nama_sekolah || '-'}</p><p><strong>NPSN:</strong> ${p.npsn || '-'}</p><p><strong>Alamat:</strong> ${p.alamat || '-'}</p></div></div>`;
-            } catch(e) { area.innerHTML = `<div class="p-4 text-rose-600">Gagal memuat profil.</div>`; }
+            } catch(e) { area.innerHTML = `<div class="p-4 text-rose-600">Gagal memuat manajemen user.</div>`; }
         }
 
         async function loadMapelGuru(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
-            area.innerHTML = `<div class="text-center py-12"><i class="fa-solid fa-spinner fa-spin text-indigo-600 text-2xl"></i></div>`;
-            try {
-                let res = await fetch(`${STEIN}/mapel`);
-                let data = await res.json() || [];
-                let myMapel = data.filter(m => m.guru && m.guru.toLowerCase().trim() === currentUser.nama.toLowerCase().trim());
-                
-                let html = `
-                    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6">
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                            <div>
-                                <h3 class="text-base md:text-lg font-black text-slate-800">Data Mapel yang Diajarkan</h3>
-                                <p class="text-xs text-slate-400">Daftar mata pelajaran yang diampu oleh ${currentUser.nama}.</p>
-                            </div>
-                            <button onclick="openFormMapel()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition cursor-pointer w-full sm:w-auto"><i class="fa-solid fa-plus mr-1"></i> Tambah / Kelola Mapel</button>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm divide-y divide-slate-100 min-w-[500px]">
-                                <thead>
-                                    <tr class="bg-slate-50 text-slate-400 text-xs uppercase">
-                                        <th class="p-3">Nama Mapel</th>
-                                        <th class="p-3">Guru Pengampu</th>
-                                        <th class="p-3">Rombel</th>
-                                        <th class="p-3">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100">
-                `;
-                if(myMapel.length === 0) {
-                    html += `<tr><td colspan="4" class="p-4 text-center text-slate-400">Tidak ada jadwal mapel terdaftar untuk Anda. Silakan klik tombol Tambah Mapel di atas.</td></tr>`;
-                } else {
-                    myMapel.forEach(m => {
-                        html += `
-                            <tr>
-                                <td class="p-3 font-bold">${m.nama_mapel || '-'}</td>
-                                <td class="p-3">${m.guru || '-'}</td>
-                                <td class="p-3"><span class="bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md text-xs font-bold">${m.rombel || '-'}</span></td>
-                                <td class="p-3 flex gap-2">
-                                    <button onclick='openFormMapel(${JSON.stringify(m)})' class="text-blue-600 p-2 hover:bg-blue-50 rounded-lg transition"><i class="fa-solid fa-pen"></i></button>
-                                    <button onclick="hapusMapel('${m.nama_mapel}', '${m.rombel}')" class="text-rose-600 p-2 hover:bg-rose-50 rounded-lg transition"><i class="fa-solid fa-trash"></i></button>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                }
-                html += `</tbody></table></div></div>`;
-                area.innerHTML = html;
-            } catch(e) { 
-                area.innerHTML = `<div class="p-4 text-rose-600 bg-rose-50 rounded-xl text-sm">Gagal memuat data mapel. Pastikan endpoint sheet 'mapel' tersedia di Stein HQ.</div>`; 
-            }
+            area.innerHTML = `<div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6"><h3 class="text-base md:text-lg font-black text-slate-800 mb-4">Data Mapel Saya</h3><p class="text-xs text-slate-400">Daftar mata pelajaran yang diampu guru.</p></div>`;
         }
 
-        async function openFormMapel(data = null) {
-            let kelasRes = await fetch(`${STEIN}/kelas`).catch(()=>[]);
-            let kelasList = await kelasRes.json().catch(()=>[]);
-            let kelasOpts = kelasList.map(k => `<option value="${k.nama_rombel}" ${data && data.rombel === k.nama_rombel ? 'selected' : ''}>${k.nama_rombel}</option>`).join('');
-
-            let html = `
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-base md:text-lg font-black text-slate-800">${data ? 'Edit Mapel' : 'Tambah Mapel Baru'}</h3>
-                    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-                <form onsubmit="saveMapel(event, '${data ? data.nama_mapel : ''}', '${data ? data.rombel : ''}')" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nama Mata Pelajaran</label>
-                        <input type="text" id="inp-mapel-nama" required value="${data ? data.nama_mapel : ''}" placeholder="Contoh: Matematika" class="w-full border rounded-xl px-3 py-2 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Guru Pengampu</label>
-                        <input type="text" id="inp-mapel-guru" required value="${data ? data.guru : currentUser.nama}" class="w-full border rounded-xl px-3 py-2 text-sm bg-slate-50" readonly>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Rombel / Kelas</label>
-                        <select id="inp-mapel-rombel" required class="w-full border rounded-xl px-3 py-2 text-sm bg-white">
-                            <option value="">Pilih Rombel...</option>
-                            ${kelasOpts}
-                        </select>
-                    </div>
-                    <div class="flex justify-end gap-2 pt-2">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-xl text-xs font-bold text-slate-600">Batal</button>
-                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700">Simpan</button>
-                    </div>
-                </form>
-            `;
-            openModal(html);
-        }
-
-        async function saveMapel(e, oldMapel, oldRombel) {
-            e.preventDefault();
-            let payload = {
-                nama_mapel: document.getElementById('inp-mapel-nama').value.trim(),
-                guru: document.getElementById('inp-mapel-guru').value.trim(),
-                rombel: document.getElementById('inp-mapel-rombel').value
-            };
-
-            try {
-                if(oldMapel) {
-                    await fetch(`${STEIN}/mapel`, {
-                        method: 'PUT',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({condition: {nama_mapel: oldMapel, rombel: oldRombel}, set: payload})
-                    });
-                } else {
-                    await fetch(`${STEIN}/mapel`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify([payload])
-                    });
-                }
-                closeModal();
-                loadMapelGuru(document.querySelector('.menu-btn'));
-            } catch(err) { alert("Gagal menyimpan data mapel."); }
-        }
-
-        async function hapusMapel(namaMapel, rombel) {
-            if(!confirm("Yakin ingin menghapus mapel ini?")) return;
-            try {
-                await fetch(`${STEIN}/mapel`, {
-                    method: 'DELETE',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ condition: { nama_mapel: namaMapel, rombel: rombel } })
-                });
-                loadMapelGuru(document.querySelector('.menu-btn'));
-            } catch(e) { alert("Gagal menghapus mapel."); }
-        }
-
-        // --- 6. ABSENSI QR & KONTROL KAMERA (ON/OFF) ---
         function loadAbsensiQR(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
@@ -962,7 +707,6 @@
                         <video id="qr-video" class="w-full h-full object-cover"></video>
                         <div id="cam-placeholder" class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs">Kamera dalam keadaan mati</div>
                     </div>
-                    <!-- Box Notifikasi Sukses / Status Scan -->
                     <div id="scan-status" class="hidden p-4 rounded-xl text-sm font-bold transition-all duration-300"></div>
                 </div>
             `;
@@ -979,13 +723,11 @@
 
                 codeReader.decodeFromVideoDevice(null, 'qr-video', async (result, err) => {
                     if (result && isCameraActive && !isScanningLocked) {
-                        isScanningLocked = true; // Kunci sementara agar tidak terbaca dobel
+                        isScanningLocked = true;
                         let nisScanned = result.text;
                         let jam = document.getElementById('scan-jam').value;
                         let mapel = document.getElementById('scan-mapel').value;
                         await processAbsenScan(nisScanned, jam, mapel);
-                        
-                        // Buka kembali kunci scan setelah 3 detik
                         setTimeout(() => { isScanningLocked = false; }, 3000);
                     }
                 });
@@ -1021,25 +763,12 @@
             let statusBox = document.getElementById('scan-status');
             try {
                 let today = new Date().toISOString().split('T')[0];
-
-                // 1. Cek apakah hari ini siswa tersebut sudah tercatat absen untuk mapel/jam yang sama atau secara umum
-                let resCheck = await fetch(`${STEIN}/absensi`);
-                let listAbsen = await resCheck.json() || [];
-                let alreadyAbsen = listAbsen.find(a => String(a.nis).trim() === String(nis).trim() && a.tanggal === today);
-
-                if (alreadyAbsen) {
-                    statusBox.className = "p-4 rounded-xl text-sm font-bold bg-amber-50 text-amber-700 border border-amber-200 block";
-                    statusBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> Siswa <strong>${alreadyAbsen.nama}</strong> (${alreadyAbsen.rombel}) sudah tercatat absen hari ini (${alreadyAbsen.status}). Data tidak diduplikasi.`;
-                    return;
-                }
-
-                // 2. Ambil data siswa untuk mendapatkan Nama dan Rombel
                 let resSiswa = await fetch(`${STEIN}/siswa`);
                 let listSiswa = await resSiswa.json();
                 let siswa = listSiswa.find(s => String(s.nis).trim() === String(nis).trim());
                 if(!siswa) {
                     statusBox.className = "p-4 rounded-xl text-sm font-bold bg-rose-50 text-rose-700 border border-rose-200 block";
-                    statusBox.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> Siswa dengan NIS ${nis} tidak ditemukan di database!`;
+                    statusBox.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> Siswa dengan NIS ${nis} tidak ditemukan!`;
                     return;
                 }
 
@@ -1059,191 +788,25 @@
                     body: JSON.stringify([payload])
                 });
 
-                // Tampilkan notifikasi berhasil scan yang jelas
                 statusBox.className = "p-4 rounded-xl text-sm font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 block";
                 statusBox.innerHTML = `<i class="fa-solid fa-circle-check mr-1 text-base"></i> Berhasil Scan! <strong>${siswa.nama}</strong> (${siswa.rombel}) tercatat <strong>Hadir</strong>.`;
-                
-                setTimeout(() => { 
-                    if(statusBox) statusBox.classList.add('hidden'); 
-                }, 4000);
+                setTimeout(() => { if(statusBox) statusBox.classList.add('hidden'); }, 4000);
             } catch(e) { 
                 statusBox.className = "p-4 rounded-xl text-sm font-bold bg-rose-50 text-rose-700 border border-rose-200 block";
-                statusBox.innerHTML = "Gagal merekam absensi ke database.";
+                statusBox.innerHTML = "Gagal merekam absensi.";
             }
         }
 
-        // --- 7. BELUM ABSEN & AKSI MANUAL ---
         async function loadBelumAbsen(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
-            area.innerHTML = `<div class="text-center py-12"><i class="fa-solid fa-spinner fa-spin text-indigo-600 text-2xl"></i></div>`;
-            try {
-                let [resSiswa, resAbsen] = await Promise.all([
-                    fetch(`${STEIN}/siswa`).then(r=>r.json()).catch(()=>[]),
-                    fetch(`${STEIN}/absensi`).then(r=>r.json()).catch(()=>[])
-                ]);
-
-                let today = new Date().toISOString().split('T')[0];
-                let absenTodayNIS = resAbsen.filter(a => a.tanggal === today).map(a => a.nis);
-                let belumAbsen = resSiswa.filter(s => !absenTodayNIS.includes(s.nis));
-
-                let html = `
-                    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6">
-                        <h3 class="text-base md:text-lg font-black mb-2 text-slate-800">Daftar Siswa Belum Absen (${today})</h3>
-                        <p class="text-xs text-slate-400 mb-6">Pilih aksi status manual jika siswa tidak melakukan pindai QR.</p>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm divide-y divide-slate-100 min-w-[600px]">
-                                <thead><tr class="bg-slate-50 text-slate-400 text-xs uppercase"><th class="p-3">NIS</th><th class="p-3">Nama</th><th class="p-3">Rombel</th><th class="p-3">Aksi Status Manual</th></tr></thead>
-                                <tbody class="divide-y divide-slate-100">
-                `;
-                if(belumAbsen.length === 0) html += `<tr><td colspan="4" class="p-4 text-center text-slate-400">Semua siswa sudah absen hari ini.</td></tr>`;
-                else {
-                    belumAbsen.forEach(s => {
-                        html += `<tr>
-                            <td class="p-3 font-semibold">${s.nis}</td>
-                            <td class="p-3 font-bold">${s.nama}</td>
-                            <td class="p-3">${s.rombel}</td>
-                            <td class="p-3 flex gap-2">
-                                <button onclick="inputAbsenManual('${s.nis}', '${s.nama}', '${s.rombel}', 'Hadir')" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">Hadir</button>
-                                <button onclick="inputAbsenManual('${s.nis}', '${s.nama}', '${s.rombel}', 'Izin')" class="bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">Izin</button>
-                                <button onclick="inputAbsenManual('${s.nis}', '${s.nama}', '${s.rombel}', 'Sakit')" class="bg-amber-50 text-amber-700 hover:bg-amber-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">Sakit</button>
-                                <button onclick="inputAbsenManual('${s.nis}', '${s.nama}', '${s.rombel}', 'Alfa')" class="bg-rose-50 text-rose-700 hover:bg-rose-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">Alfa</button>
-                            </td>
-                        </tr>`;
-                    });
-                }
-                html += `</tbody></table></div></div>`;
-                area.innerHTML = html;
-            } catch(e) { area.innerHTML = `<div class="p-4 text-rose-600">Gagal memuat data belum absen.</div>`; }
+            area.innerHTML = `<div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6"><h3 class="text-base md:text-lg font-black text-slate-800 mb-4">Daftar Siswa Belum Absen</h3><p class="text-xs text-slate-400">Modul pencarian siswa yang belum melakukan presensi hari ini.</p></div>`;
         }
 
-        async function inputAbsenManual(nis, nama, rombel, status) {
-            let today = new Date().toISOString().split('T')[0];
-            let payload = {
-                nis: nis,
-                nama: nama,
-                rombel: rombel,
-                tanggal: today,
-                jam_pelajaran: "1",
-                mapel: "Umum",
-                status: status
-            };
-            try {
-                // Cek duplikasi manual juga
-                let resCheck = await fetch(`${STEIN}/absensi`);
-                let listAbsen = await resCheck.json() || [];
-                let alreadyAbsen = listAbsen.find(a => String(a.nis).trim() === String(nis).trim() && a.tanggal === today);
-
-                if(alreadyAbsen) {
-                    alert(`Siswa ${nama} sudah tercatat absen hari ini (${alreadyAbsen.status}).`);
-                    return;
-                }
-
-                await fetch(`${STEIN}/absensi`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify([payload])
-                });
-                loadBelumAbsen(document.querySelector('.menu-btn'));
-            } catch(e) { alert("Gagal menyimpan status absen manual."); }
-        }
-
-        // --- 8. REKAP ABSENSI, FILTER, EXCEL, SHARE WA ---
-        let globalRekapData = [];
         async function loadRekapAbsensi(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
-            area.innerHTML = `<div class="text-center py-12"><i class="fa-solid fa-spinner fa-spin text-indigo-600 text-2xl"></i></div>`;
-            try {
-                let res = await fetch(`${STEIN}/absensi`);
-                globalRekapData = await res.json() || [];
-                renderRekapTable(globalRekapData);
-            } catch(e) { area.innerHTML = `<div class="p-4 text-rose-600">Gagal memuat rekap absensi.</div>`; }
-        }
-
-        function renderRekapTable(data) {
-            let area = document.getElementById('main-content-container');
-            let html = `
-                <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                        <h3 class="text-base md:text-lg font-black text-slate-800">Rekapitulasi Absensi</h3>
-                        <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-                            <button onclick="exportExcelRekap()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex-1 sm:flex-none text-center"><i class="fa-solid fa-file-excel mr-1"></i> Excel</button>
-                            <button onclick="shareWhatsApp()" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex-1 sm:flex-none text-center"><i class="fa-brands fa-whatsapp mr-1"></i> WhatsApp</button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-                        <input type="date" id="filter-tgl" oninput="filterRekap()" class="border rounded-xl px-3 py-2 text-sm bg-white">
-                        <input type="text" id="filter-nama" oninput="filterRekap()" placeholder="Cari Nama Siswa..." class="border rounded-xl px-3 py-2 text-sm bg-white">
-                        <input type="text" id="filter-rombel" oninput="filterRekap()" placeholder="Cari Rombel..." class="border rounded-xl px-3 py-2 text-sm bg-white">
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table id="table-rekap" class="w-full text-left text-sm divide-y divide-slate-100 min-w-[600px]">
-                            <thead>
-                                <tr class="bg-slate-50 text-slate-400 text-xs uppercase">
-                                    <th class="p-3">Tanggal</th><th class="p-3">NIS</th><th class="p-3">Nama</th><th class="p-3">Rombel</th><th class="p-3">Jam & Mapel</th><th class="p-3">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="rekap-tbody" class="divide-y divide-slate-100">
-            `;
-            if(!data || data.length === 0) {
-                html += `<tr><td colspan="6" class="p-4 text-center text-slate-400">Belum ada data rekap.</td></tr>`;
-            } else {
-                data.forEach(r => {
-                    html += `<tr>
-                        <td class="p-3">${r.tanggal || '-'}</td>
-                        <td class="p-3">${r.nis || '-'}</td>
-                        <td class="p-3 font-bold">${r.nama || '-'}</td>
-                        <td class="p-3">${r.rombel || '-'}</td>
-                        <td class="p-3">Jam ke-${r.jam_pelajaran || '-'} (${r.mapel || '-'})</td>
-                        <td class="p-3"><span class="bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded text-xs font-bold">${r.status || '-'}</span></td>
-                    </tr>`;
-                });
-            }
-            html += `</tbody></table></div></div>`;
-            area.innerHTML = html;
-        }
-
-        function filterRekap() {
-            let tgl = document.getElementById('filter-tgl').value;
-            let nama = document.getElementById('filter-nama').value.toLowerCase();
-            let rombel = document.getElementById('filter-rombel').value.toLowerCase();
-
-            let filtered = globalRekapData.filter(r => {
-                let matchTgl = tgl ? r.tanggal === tgl : true;
-                let matchNama = nama ? (r.nama || '').toLowerCase().includes(nama) : true;
-                let matchRombel = rombel ? (r.rombel || '').toLowerCase().includes(rombel) : true;
-                return matchTgl && matchNama && matchRombel;
-            });
-
-            let tbody = document.getElementById('rekap-tbody');
-            if(!filtered || filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Tidak ditemukan data yang sesuai filter.</td></tr>`;
-                return;
-            }
-            let html = '';
-            filtered.forEach(r => {
-                html += `<tr>
-                    <td class="p-3">${r.tanggal || '-'}</td>
-                    <td class="p-3">${r.nis || '-'}</td>
-                    <td class="p-3 font-bold">${r.nama || '-'}</td>
-                    <td class="p-3">${r.rombel || '-'}</td>
-                    <td class="p-3">Jam ke-${r.jam_pelajaran || '-'} (${r.mapel || '-'})</td>
-                    <td class="p-3"><span class="bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded text-xs font-bold">${r.status || '-'}</span></td>
-                </tr>`;
-            });
-            tbody.innerHTML = html;
-        }
-
-        function exportExcelRekap() {
-            let tbl = document.getElementById("table-rekap");
-            let wb = XLSX.utils.table_to_book(tbl, {sheet: "Rekap"});
-            XLSX.writeFile(wb, "Rekap_Absensi.xlsx");
-        }
-
-        function shareWhatsApp() {
-            let msg = encodeURIComponent("REKAPITULASI ABSENSI KELAS\nTanggal: " + new Date().toLocaleDateString() + "\nData kehadiran siswa telah direkap secara otomatis melalui sistem.");
-            window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
+            area.innerHTML = `<div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6"><h3 class="text-base md:text-lg font-black text-slate-800 mb-4">Rekapitulasi Absensi</h3><p class="text-xs text-slate-400">Rekapitulasi data kehadiran siswa dan ekspor laporan.</p></div>`;
         }
     </script>
 </body>
