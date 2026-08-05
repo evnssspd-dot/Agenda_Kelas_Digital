@@ -328,39 +328,71 @@
         }
 
         function openCetakKartu(s) {
+            let schoolLogo = globalSchoolProfile.logo || 'https://via.placeholder.com/40';
+            let schoolName = globalSchoolProfile.nama_sekolah || 'SMP ISLAM DARUSSALAM';
+            let nomorInduk = s.nis || '-';
+            let npsnSekolah = globalSchoolProfile.npsn || '20247282';
+
             let html = `
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-base md:text-lg font-black text-slate-800">Kartu Pelajar & QR Code</h3>
+                    <h3 class="text-base md:text-lg font-black text-slate-800">Cetak Kartu Tanda Pelajar</h3>
                     <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <div id="print-card-area" class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-6 rounded-3xl shadow-xl max-w-sm mx-auto text-center border border-white/10 relative overflow-hidden">
-                    <div class="absolute -right-10 -top-10 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl"></div>
-                    <h4 class="text-xs uppercase tracking-widest text-indigo-300 font-bold mb-1">KARTU TANDA PELAJAR</h4>
-                    <p class="text-xs text-slate-400 mb-3">Agenda & Presensi Kelas</p>
-                    <img src="${s.foto || 'https://via.placeholder.com/80'}" class="w-20 h-20 rounded-full object-cover mx-auto border-4 border-indigo-500/40 shadow-md mb-3">
-                    <h2 class="text-base font-extrabold text-white mb-0.5 leading-snug">${s.nama}</h2>
-                    <p class="text-xs text-indigo-200 mb-2 break-all px-2">NIS: ${s.nis}</p>
-                    <span class="inline-block bg-indigo-600/50 border border-indigo-400/30 text-xs px-3 py-0.5 rounded-full font-bold mb-4">${s.rombel}</span>
-                    <div class="bg-white p-3 rounded-2xl inline-block shadow-inner" id="qrcode-container"></div>
-                    <p class="text-[10px] text-slate-400 mt-3">Scan QR ini untuk kehadiran otomatis.</p>
+                <div class="flex justify-center my-4">
+                    <!-- KARTU PORTRAIT BERSIH DENGAN QR CODE LEBIH BESAR -->
+                    <div id="print-card-area" class="card-portrait rounded-2xl shadow-2xl flex flex-col justify-between relative overflow-hidden bg-white border border-slate-300" style="background: #ffffff !important;">
+                        
+                        <!-- Header Atas (Ungu / Indigo dengan Logo & Badge Kuning) -->
+                        <div class="w-full pt-2.5 pb-2.5 px-3 relative z-10 flex items-center space-x-2 rounded-t-2xl shadow-sm" style="background: #6366f1 !important;">
+                            <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-md p-0.5 shrink-0">
+                                <img src="${schoolLogo}" class="w-full h-full object-contain">
+                            </div>
+                            <div class="text-left flex flex-col justify-center overflow-hidden leading-tight">
+                                <h2 class="text-[10px] font-black uppercase tracking-wide text-white truncate">${schoolName}</h2>
+                                <span class="inline-block mt-0.5 bg-amber-400 text-slate-950 text-[7.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md shadow-sm w-max">Kartu Tanda Siswa</span>
+                            </div>
+                        </div>
+
+                        <!-- Bagian Tengah (Foto, Nama, NIS/NISN Satu Baris, & QR Code Lebih Besar) -->
+                        <div class="flex flex-col items-center justify-center px-3 my-auto w-full relative z-10 text-center">
+                            <!-- Foto Siswa -->
+                            <div class="w-16 h-20 rounded-xl overflow-hidden border-2 border-indigo-500 shadow-md bg-slate-100 flex items-center justify-center shrink-0 mb-1.5">
+                                <img src="${s.foto || 'https://via.placeholder.com/80'}" class="w-full h-full object-cover object-top">
+                            </div>
+
+                            <!-- Nama Siswa -->
+                            <h3 class="text-xs font-black text-slate-900 uppercase tracking-tight truncate max-w-[210px] mb-1">${s.nama}</h3>
+                            
+                            <!-- NIS/NISN Dijamin Satu Baris -->
+                            <div class="text-[8.5px] font-bold text-slate-600 mb-2.5 whitespace-nowrap bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200">
+                                NIS/NISN: <span class="text-slate-900 font-extrabold">${nomorInduk}</span>
+                            </div>
+
+                            <!-- QR Code Lebih Besar -->
+                            <div class="bg-white p-1 rounded-lg shadow-sm border border-slate-200 inline-block" id="qrcode-container"></div>
+                        </div>
+
+                        <!-- Footer Bawah (NPSN & Absensi QR System) -->
+                        <div class="w-full py-2 px-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-[7.5px] font-bold text-slate-600 relative z-10">
+                            <div>NPSN: <span class="text-indigo-700 font-extrabold">${npsnSekolah}</span></div>
+                            <div class="text-indigo-800 font-black tracking-wider uppercase">ABSENSI QR SYSTEM</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="flex justify-end gap-2 mt-6">
+                <div class="flex justify-end gap-2 mt-4">
                     <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-xl text-xs font-bold text-slate-600">Tutup</button>
                     <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700"><i class="fa-solid fa-print mr-1"></i> Cetak Kartu</button>
                 </div>
             `;
             openModal(html);
             setTimeout(() => {
-                let qrContainer = document.getElementById('qrcode-container');
-                if(qrContainer) {
-                    qrContainer.innerHTML = '';
-                    new QRCode(qrContainer, {
-                        text: String(s.nis),
-                        width: 90,
-                        height: 90
-                    });
-                }
-            }, 150);
+                document.getElementById('qrcode-container').innerHTML = '';
+                new QRCode(document.getElementById('qrcode-container'), {
+                    text: String(s.nis),
+                    width: 68,
+                    height: 68
+                });
+            }, 100);
         }
 
         async function openFormSiswa(data = null) {
@@ -824,56 +856,69 @@
             } catch(e) { area.innerHTML = `<div class="p-4 text-rose-600">Gagal memuat user.</div>`; }
         }
 
+        // --- MENU PROFIL SEKOLAH (DENGAN INPUT NAMA APLIKASI) ---
         async function loadProfilSekolah(el) {
             setMenuActive(el);
             let area = document.getElementById('main-content-container');
             area.innerHTML = `<div class="text-center py-12"><i class="fa-solid fa-spinner fa-spin text-indigo-600 text-2xl"></i></div>`;
             try {
-                let res = await fetch(`${STEIN}/profil`).catch(()=>[]);
-                let data = await res.json().catch(()=>[]);
-                let p = (data && data.length > 0) ? data[0] : {};
-                
+                let res = await fetch(`${STEIN}/profil`);
+                let data = await res.json();
+                let p = data[0] || {};
+                globalSchoolProfile = p;
+
                 let html = `
-                    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6 max-w-xl">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-base md:text-lg font-black text-slate-800">Profil Sekolah</h3>
-                            ${currentUser.role.toLowerCase() === 'admin' ? `<button onclick='openFormProfil(${JSON.stringify(p)})' class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition"><i class="fa-solid fa-pen mr-1"></i> Edit Profil</button>` : ''}
+                    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6 max-w-xl mx-auto">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h3 class="text-base md:text-lg font-black text-slate-800">Profil Sekolah & Aplikasi</h3>
+                                <p class="text-xs text-slate-400">Atur informasi sekolah, logo, dan nama aplikasi sistem.</p>
+                            </div>
+                            <button onclick='openFormProfil(${JSON.stringify(p)})' class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition cursor-pointer"><i class="fa-solid fa-pen mr-1"></i> Edit Profil</button>
                         </div>
-                        <div class="space-y-3 text-sm">
-                            <p><strong>Nama Sekolah:</strong> ${p.nama_sekolah || '-'}</p>
-                            <p><strong>NPSN:</strong> ${p.npsn || '-'}</p>
+                        <div class="space-y-4 text-sm">
+                            <div class="flex items-center space-x-4 pb-4 border-b border-slate-100">
+                                <img src="${p.logo || 'https://via.placeholder.com/60'}" class="w-16 h-16 rounded-full object-cover border shadow-sm">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-base">${p.nama_sekolah || 'Belum diatur'}</h4>
+                                    <p class="text-xs text-slate-400">NPSN: ${p.npsn || '-'}</p>
+                                </div>
+                            </div>
                             <p><strong>Alamat:</strong> ${p.alamat || '-'}</p>
+                            <p><strong>Nama Aplikasi:</strong> <span class="bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md text-xs font-bold">${p.nama_aplikasi || 'Agenda & Presensi Kelas'}</span></p>
                         </div>
                     </div>
                 `;
                 area.innerHTML = html;
-            } catch(e) { 
-                area.innerHTML = `<div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 md:p-6 max-w-xl">
-                    <h3 class="text-base md:text-lg font-black text-slate-800 mb-4">Profil Sekolah</h3>
-                    <p class="text-sm text-slate-500 mb-4">Belum ada data profil sekolah tersimpan.</p>
-                    ${currentUser.role.toLowerCase() === 'admin' ? `<button onclick='openFormProfil({})' class="bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-xl">Tambah Profil</button>` : ''}
-                </div>`; 
-            }
+            } catch(e) { area.innerHTML = `<div class="p-4 text-rose-600">Gagal memuat profil sekolah.</div>`; }
         }
 
         function openFormProfil(p = {}) {
             let html = `
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-base md:text-lg font-black text-slate-800">Edit Profil Sekolah</h3>
+                    <h3 class="text-base md:text-lg font-black text-slate-800">Pengaturan Profil Sekolah</h3>
                     <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <form onsubmit="saveProfil(event)" class="space-y-4">
+                <form onsubmit="saveProfilSekolah(event)" class="space-y-4">
                     <div>
                         <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nama Sekolah</label>
-                        <input type="text" id="inp-profil-nama" required value="${p.nama_sekolah || ''}" class="w-full border rounded-xl px-3 py-2 text-sm">
+                        <input type="text" id="inp-pro-sekolah" required value="${p.nama_sekolah || ''}" class="w-full border rounded-xl px-3 py-2 text-sm">
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase text-slate-500 mb-1">NPSN</label>
-                        <input type="text" id="inp-profil-npsn" required value="${p.npsn || ''}" class="w-full border rounded-xl px-3 py-2 text-sm">
+                        <input type="text" id="inp-pro-npsn" value="${p.npsn || ''}" class="w-full border rounded-xl px-3 py-2 text-sm">
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Alamat</label>
-                        <textarea id="inp-profil-alamat" required class="w-full border rounded-xl px-3 py-2 text-sm" rows="3">${p.alamat || ''}</textarea>
+                        <input type="text" id="inp-pro-alamat" value="${p.alamat || ''}" class="w-full border rounded-xl px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Logo Sekolah (URL / Base64)</label>
+                        <input type="text" id="inp-pro-logo" value="${p.logo || ''}" placeholder="https://..." class="w-full border rounded-xl px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nama Aplikasi (Kolom E: nama_aplikasi)</label>
+                        <input type="text" id="inp-pro-appname" value="${p.nama_aplikasi || ''}" placeholder="Agenda & Presensi Kelas" class="w-full border rounded-xl px-3 py-2 text-sm">
                     </div>
                     <div class="flex justify-end gap-2 pt-2">
                         <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-xl text-xs font-bold text-slate-600">Batal</button>
@@ -884,22 +929,36 @@
             openModal(html);
         }
 
-        async function saveProfil(e) {
+        async function saveProfilSekolah(e) {
             e.preventDefault();
             let payload = {
-                nama_sekolah: document.getElementById('inp-profil-nama').value.trim(),
-                npsn: document.getElementById('inp-profil-npsn').value.trim(),
-                alamat: document.getElementById('inp-profil-alamat').value.trim()
+                nama_sekolah: document.getElementById('inp-pro-sekolah').value.trim(),
+                npsn: document.getElementById('inp-pro-npsn').value.trim(),
+                alamat: document.getElementById('inp-pro-alamat').value.trim(),
+                logo: document.getElementById('inp-pro-logo').value.trim(),
+                nama_aplikasi: document.getElementById('inp-pro-appname').value.trim()
             };
+
             try {
                 await fetch(`${STEIN}/profil`, {
-                    method: 'POST',
+                    method: 'PUT',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify([payload])
+                    body: JSON.stringify({condition: {}, set: payload})
+                }).catch(async () => {
+                    await fetch(`${STEIN}/profil`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify([payload])
+                    });
                 });
+                
+                globalSchoolProfile = payload;
+                applyProfileBranding(payload);
                 closeModal();
                 loadProfilSekolah(document.querySelector('.menu-btn'));
-            } catch(err) { alert("Gagal menyimpan profil sekolah."); }
+            } catch(err) {
+                alert("Gagal menyimpan profil sekolah.");
+            }
         }
 
         async function loadMapelGuru(el) {
