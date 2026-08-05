@@ -365,43 +365,46 @@
                     <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="flex justify-center my-4">
-                    <!-- KARTU PORTRAIT DENGAN TEMA WARNA SESUAI REFERENSI -->
+                    <!-- KARTU PORTRAIT RAPI & ESTETIK SESUAI WARNA REFERENSI -->
                     <div id="print-card-area" class="card-portrait rounded-2xl shadow-2xl flex flex-col justify-between relative overflow-hidden bg-white border border-slate-300" style="background: #ffffff !important;">
                         
                         <!-- Header Atas (Ungu / Indigo dengan Logo & Badge Kuning) -->
-                        <div class="w-full pt-3 pb-3 px-3 relative z-10 flex items-center space-x-2.5 rounded-t-2xl shadow-sm" style="background: #6366f1 !important;">
-                            <div class="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-md p-0.5 shrink-0">
+                        <div class="w-full pt-2.5 pb-2.5 px-3 relative z-10 flex items-center space-x-2 rounded-t-2xl shadow-sm" style="background: #6366f1 !important;">
+                            <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-md p-0.5 shrink-0">
                                 <img src="${schoolLogo}" class="w-full h-full object-contain">
                             </div>
                             <div class="text-left flex flex-col justify-center overflow-hidden leading-tight">
-                                <h2 class="text-[11px] font-black uppercase tracking-wide text-white truncate">${schoolName}</h2>
-                                <span class="inline-block mt-1 bg-amber-400 text-slate-950 text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md shadow-sm w-max">Kartu Tanda Siswa</span>
+                                <h2 class="text-[10px] font-black uppercase tracking-wide text-white truncate">${schoolName}</h2>
+                                <span class="inline-block mt-0.5 bg-amber-400 text-slate-950 text-[7.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md shadow-sm w-max">Kartu Tanda Siswa</span>
                             </div>
                         </div>
 
-                        <!-- Bagian Tengah (Foto, Nama, ID, & QR Code) -->
-                        <div class="flex items-center justify-between px-3.5 my-auto w-full relative z-10 gap-3">
-                            <!-- Foto Siswa (Kiri) -->
-                            <div class="w-20 h-24 rounded-xl overflow-hidden border-2 border-indigo-500 shadow-md bg-slate-100 flex items-center justify-center shrink-0">
+                        <!-- Bagian Tengah (Foto, Nama, ID, Kelas, & QR Code Tersusun Vertikal Rapi) -->
+                        <div class="flex flex-col items-center justify-center px-3 my-auto w-full relative z-10 text-center">
+                            <!-- Foto Siswa -->
+                            <div class="w-16 h-20 rounded-xl overflow-hidden border-2 border-indigo-500 shadow-md bg-slate-100 flex items-center justify-center shrink-0 mb-1.5">
                                 <img src="${s.foto || 'https://via.placeholder.com/80'}" class="w-full h-full object-cover object-top">
                             </div>
 
-                            <!-- Identitas Siswa (Tengah) -->
-                            <div class="flex flex-col items-start justify-center text-left flex-grow overflow-hidden">
-                                <h3 class="text-xs font-black text-slate-900 uppercase tracking-tight truncate w-full mb-1">${s.nama}</h3>
-                                <div class="text-[9px] font-bold text-slate-600 mb-0.5 whitespace-nowrap">ID: <span class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-extrabold border border-slate-200">${nomorInduk}</span></div>
-                                <div class="text-[9px] font-bold text-slate-600 mb-2">Kelas: <span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-extrabold border border-indigo-200">${s.kelas || 'VII'}</span></div>
-                                <div class="bg-slate-900 text-amber-400 text-[8px] font-black px-2 py-0.5 rounded-full shadow-sm tracking-wider">TA 2026/2027 (Ganjil)</div>
+                            <!-- Nama Siswa -->
+                            <h3 class="text-xs font-black text-slate-900 uppercase tracking-tight truncate max-w-[210px] mb-0.5">${s.nama}</h3>
+                            
+                            <!-- ID / NIS & Kelas -->
+                            <div class="flex items-center justify-center gap-2 text-[9px] font-bold text-slate-600 mb-1">
+                                <span>ID: <span class="text-slate-800 font-extrabold">${nomorInduk}</span></span>
+                                <span>•</span>
+                                <span>Kelas: <span class="text-indigo-700 font-extrabold">${s.kelas || 'VII'}</span></span>
                             </div>
 
-                            <!-- QR Code (Kanan) -->
-                            <div class="flex flex-col items-center justify-center shrink-0">
-                                <div class="bg-white p-1 rounded-xl shadow-sm border border-slate-200" id="qrcode-container"></div>
-                            </div>
+                            <!-- Badge TA -->
+                            <div class="bg-slate-900 text-amber-400 text-[7.5px] font-black px-2 py-0.5 rounded-full shadow-sm tracking-wider mb-2">TA 2026/2027 (Ganjil)</div>
+
+                            <!-- QR Code -->
+                            <div class="bg-white p-1 rounded-lg shadow-sm border border-slate-200 inline-block" id="qrcode-container"></div>
                         </div>
 
                         <!-- Footer Bawah (NPSN & Absensi QR System) -->
-                        <div class="w-full py-2 px-3.5 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-[8px] font-bold text-slate-600 relative z-10">
+                        <div class="w-full py-2 px-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-[7.5px] font-bold text-slate-600 relative z-10">
                             <div>NPSN: <span class="text-indigo-700 font-extrabold">${npsnSekolah}</span></div>
                             <div class="text-indigo-800 font-black tracking-wider uppercase">ABSENSI QR SYSTEM</div>
                         </div>
@@ -417,8 +420,8 @@
                 document.getElementById('qrcode-container').innerHTML = '';
                 new QRCode(document.getElementById('qrcode-container'), {
                     text: String(s.nis),
-                    width: 58,
-                    height: 58
+                    width: 52,
+                    height: 52
                 });
             }, 100);
         }
