@@ -21,6 +21,7 @@
 <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 p-4">
     <div class="bg-white/10 backdrop-blur-2xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full max-w-md text-white">
         <div class="text-center mb-8">
+            <!-- Kotak pembungkus logo berwarna putih -->
             <div class="inline-block bg-white p-3 rounded-2xl shadow-xl mb-3 overflow-hidden w-16 h-16 flex items-center justify-center">
                 <img id="login-logo-img" src="" class="w-full h-full object-contain" alt="Logo">
             </div>
@@ -28,15 +29,15 @@
             <p class="text-xs text-indigo-200 mt-1">Terhubung ke Database Stein HQ</p>
         </div>
         
-        <!-- Form Login -->
+        <!-- Form Login (Menggunakan ID asli: login-user & login-pass) -->
         <form onsubmit="handleLogin(event)" class="space-y-4">
             <div>
                 <label class="block text-xs font-semibold uppercase tracking-wider text-indigo-200 mb-2">Username</label>
-                <input type="text" id="login-username" required class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-indigo-400 text-white placeholder-indigo-300/50 transition-all text-sm" placeholder="Masukkan username...">
+                <input type="text" id="login-user" required class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-indigo-400 text-white placeholder-indigo-300/50 transition-all text-sm" placeholder="Masukkan username...">
             </div>
             <div>
                 <label class="block text-xs font-semibold uppercase tracking-wider text-indigo-200 mb-2">Password</label>
-                <input type="password" id="login-password" required class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-indigo-400 text-white placeholder-indigo-300/50 transition-all text-sm" placeholder="•••••••">
+                <input type="password" id="login-pass" required class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-indigo-400 text-white placeholder-indigo-300/50 transition-all text-sm" placeholder="•••••••">
             </div>
             <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg transition-all duration-200 cursor-pointer">
                 Masuk ke Sistem
