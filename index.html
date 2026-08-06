@@ -18,15 +18,15 @@
 <body class="bg-slate-50 font-sans antialiased text-slate-800" onload="loadGlobalProfileMetadata()">
 
     <!-- LOGIN SCREEN -->
-    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 p-4">
-        <div class="bg-white/10 backdrop-blur-2xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full max-w-md text-white">
-            <div class="text-center mb-8">
-                <div class="inline-block bg-indigo-600 p-4 rounded-2xl shadow-xl mb-3 text-white overflow-hidden w-16 h-16 flex items-center justify-center">
-    <img id="login-logo-img" src="https://via.placeholder.com/150" class="w-full h-full object-cover" alt="Logo">
-</div>
-                <h1 id="login-app-title" class="text-xl font-black tracking-wider">AGENDA & PRESENSI KELAS</h1>
-                <p class="text-xs text-indigo-200 mt-1">Terhubung ke Database Stein HQ</p>
+    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+    <div class="bg-white border border-slate-200 p-8 rounded-3xl shadow-xl w-full max-w-md text-slate-800">
+        <div class="text-center mb-8">
+            <div class="inline-block bg-indigo-600 p-4 rounded-2xl shadow-lg mb-3 text-white overflow-hidden w-16 h-16 flex items-center justify-center">
+                <img id="login-logo-img" src="" class="w-full h-full object-cover" alt="Logo">
             </div>
+            <h2 id="login-app-title" class="text-xl font-extrabold text-slate-800 tracking-wide">AGENDA KELAS DIGITAL</h2>
+            <p class="text-xs text-slate-500 mt-1">Terhubung ke Database Stein HQ</p>
+        </div>
             <form onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-indigo-200 mb-2">Username</label>
@@ -69,13 +69,12 @@
             </div>
         </header>
 
-        <div class="flex flex-1 relative">
-            <aside id="sidebar-container" class="w-72 bg-white border-r border-slate-200 p-4 space-y-1.5 hidden md:block shrink-0"></aside>
-            <div id="mobile-sidebar-backdrop" class="fixed inset-0 bg-slate-900/50 z-40 hidden md:hidden backdrop-blur-xs" onclick="toggleMobileSidebar()"></div>
-            <aside id="mobile-sidebar-container" class="fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 p-4 space-y-1.5 z-50 transform -translate-x-full transition-transform duration-300 md:hidden flex flex-col shadow-2xl overflow-y-auto"></aside>
-            <main class="flex-1 p-4 md:p-8 overflow-y-auto w-full" id="main-content-container"></main>
-        </div>
-    </div>
+        <div class="flex flex-1 relative bg-slate-50 min-h-screen">
+    <aside id="sidebar-container" class="w-72 bg-white border-r border-slate-200 p-4 space-y-1.5 hidden md:block shrink-0 text-slate-700 shadow-xs"></aside>
+    <div id="mobile-sidebar-backdrop" class="fixed inset-0 bg-slate-900/50 z-40 hidden md:hidden backdrop-blur-xs" onclick="toggleMobileSidebar()"></div>
+    <aside id="mobile-sidebar-container" class="fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 p-4 space-y-1.5 z-50 transform -translate-x-full transition-transform duration-300 md:hidden flex flex-col shadow-2xl overflow-y-auto text-slate-700"></aside>
+    <main class="flex-1 p-4 md:p-8 overflow-y-auto w-full text-slate-800" id="main-content-container"></main>
+</div>
 
     <!-- MODAL CONTAINER -->
     <div id="app-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 hidden p-4">
