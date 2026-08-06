@@ -105,31 +105,52 @@
         }
 
         function applyProfileBranding(p) {
-            let appName = p.nama_aplikasi || "Agenda & Presensi Kelas";
-            let browserTitle = document.getElementById('page-browser-title');
-            if(browserTitle) browserTitle.innerText = appName;
-            let headerTitle = document.getElementById('app-title-header');
-            if(headerTitle) headerTitle.innerText = appName;
-            let loginAppTitle = document.getElementById('login-app-title');
-            if(loginAppTitle) loginAppTitle.innerText = appName.toUpperCase();
+    if (!p) return;
 
-            if(p.logo) {
-                let hImg = document.getElementById('header-logo-img');
-                let hIcon = document.getElementById('header-logo-icon');
-                if(hImg && hIcon) {
-                    hImg.src = p.logo;
-                    hImg.classList.remove('hidden');
-                    hIcon.classList.add('hidden');
-                }
-                let lImg = document.getElementById('login-logo-img');
-                let lIcon = document.getElementById('login-logo-icon');
-                if(lImg && lIcon) {
-                    lImg.src = p.logo;
-                    lImg.classList.remove('hidden');
-                    lIcon.classList.add('hidden');
-                }
-            }
+    let appName = p.nama_aplikasi || "Agenda & Presensi Kelas";
+    let browserTitle = document.getElementById('page-browser-title');
+    if(browserTitle) browserTitle.innerText = appName;
+    
+    let headerTitle = document.getElementById('app-title-header');
+    if(headerTitle) headerTitle.innerText = appName;
+    
+    let loginAppTitle = document.getElementById('login-app-title');
+    if(loginAppTitle) loginAppTitle.innerText = appName.toUpperCase();
+
+    // Handle Logo Header / Sidebar
+    let hImg = document.getElementById('header-logo-img');
+    let hIcon = document.getElementById('header-logo-icon');
+    
+    if (p.logo && p.logo.trim() !== "") {
+        if(hImg) {
+            hImg.src = p.logo;
+            hImg.classList.remove('hidden');
         }
+        if(hIcon) {
+            hIcon.classList.add('hidden');
+        }
+    } else {
+        if(hImg) hImg.classList.add('hidden');
+        if(hIcon) hIcon.classList.remove('hidden');
+    }
+
+    // Handle Logo Login Screen
+    let lImg = document.getElementById('login-logo-img');
+    let lIcon = document.getElementById('login-logo-icon');
+    
+    if (p.logo && p.logo.trim() !== "") {
+        if(lImg) {
+            lImg.src = p.logo;
+            lImg.classList.remove('hidden');
+        }
+        if(lIcon) {
+            lIcon.classList.add('hidden');
+        }
+    } else {
+        if(lImg) lImg.classList.add('hidden');
+        if(lIcon) lIcon.classList.remove('hidden');
+    }
+}
         async function handleLogin(e) {
             e.preventDefault();
             const u = document.getElementById('login-user').value.trim();
