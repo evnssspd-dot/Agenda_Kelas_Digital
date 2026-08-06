@@ -14,6 +14,27 @@
     <script src="https://unpkg.com/@zxing/library@latest"></script>
     <!-- QRCode Generator untuk Cetak Kartu -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <!-- TAMBAHAN KODE CSS KHUSUS PRINT AGAR HANYA KARTU YANG TERCETAK RAPI -->
+    <style>
+        @media print {
+            body * {
+                visibility: hidden !important;
+            }
+            #print-card-area, #print-card-area * {
+                visibility: visible !important;
+            }
+            #print-card-area {
+                position: absolute !important;
+                left: 50% !important;
+                top: 20px !important;
+                transform: translateX(-50%) !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                border: 1px solid #cbd5e1 !important;
+            }
+        }
+    </style>
 </head>
 <body class="bg-slate-50 font-sans antialiased text-slate-800" onload="loadGlobalProfileMetadata()">
 
@@ -401,7 +422,7 @@
                 </div>
                 <div class="flex justify-center my-4">
                     <!-- KARTU PORTRAIT BERSIH DENGAN QR CODE LEBIH BESAR -->
-                    <div id="print-card-area" class="card-portrait rounded-2xl shadow-2xl flex flex-col justify-between relative overflow-hidden bg-white border border-slate-300" style="background: #ffffff !important;">
+                    <div id="print-card-area" class="card-portrait rounded-2xl shadow-2xl flex flex-col justify-between relative overflow-hidden bg-white border border-slate-300" style="background: #ffffff !important; width: 250px; height: 380px;">
                         
                         <!-- Header Atas (Ungu / Indigo dengan Logo & Badge Kuning) -->
                         <div class="w-full pt-2.5 pb-2.5 px-3 relative z-10 flex items-center space-x-2 rounded-t-2xl shadow-sm" style="background: #6366f1 !important;">
